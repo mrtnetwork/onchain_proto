@@ -238,10 +238,24 @@ class OnChainProtoUtils {
     return '$first$tail';
   }
 
+  // /// Wraps multi-line proto comments as a Dart doc comment (`///` per line).
+  // static String? comment(String comments, {String indent = ''}) {
+  //   final lines = comments.split('\n').where((e) => !e.contains("TODO"));
+  //   if (lines.isEmpty) return null;
+  //   return lines.map((l) => '$indent/// $l'.trimRight()).join('\n');
+  // }
+
   /// Wraps multi-line proto comments as a Dart doc comment (`///` per line).
   static String? comment(String comments, {String indent = ''}) {
     final lines = comments.split('\n').where((e) => !e.contains("TODO"));
     if (lines.isEmpty) return null;
-    return lines.map((l) => '$indent/// $l'.trimRight()).join('\n');
+    return lines.map((l) => '$indent/// ${_escapeDocComment(l)}'.trimRight()).join('\n');
+  }
+
+  static String _escapeDocComment(String line) {
+    return line
+        .replaceAll('&', '&amp;') // must come first
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;');
   }
 }
