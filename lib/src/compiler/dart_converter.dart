@@ -108,8 +108,6 @@ extension ProtoEnumToDartProtoEnum on ProtoEnum {
       final dartValueName = OnChainProtoUtils.enumValueName(v.name);
       buf.writeln("  $dartValueName(${v.value}, '${v.name}')${isLast ? ';' : ','}");
     }
-    // throw ItemNotFoundException(name: )
-
     buf.writeln();
     buf.writeln('  const $dartName(this.value, this.protoName);');
     buf.writeln();

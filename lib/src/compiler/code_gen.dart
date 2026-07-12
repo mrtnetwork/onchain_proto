@@ -399,11 +399,6 @@ class CosmosProtoCodegenTarget extends DefaultProtoCodegenTarget {
       ...super.defaultImports(file),
       "package:cosmos_sdk/proto_messages/types.dart",
       "package:cosmos_sdk/sdk/serialization/serialization.dart",
-      if (file.package == OnChainProtoUtils.googleProtobufPackage &&
-          file.messages.any(
-            (e) => e.name == OnChainProtoUtils.googleProtobufTimestampType,
-          ))
-        "package:cosmos_sdk/sdk/utils/utils.dart",
     ];
   }
 

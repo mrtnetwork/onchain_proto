@@ -1,14 +1,14 @@
 import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:onchain_proto/src/compiler/compiler.dart';
+import 'package:onchain_proto/src/exception/exception.dart';
 import 'package:onchain_proto/src/types/types.dart';
 import 'tokenize.dart';
 
-class ProtoParseException implements Exception {
-  final String message;
+class ProtoParseException extends OnChainProtoException {
   final int line;
   final Map<String, dynamic>? details;
 
-  ProtoParseException(this.message, this.line, {this.details});
+  const ProtoParseException(super.message, this.line, {this.details});
 
   @override
   String toString() => 'ProtoParseException at line $line: $message, details: $details';

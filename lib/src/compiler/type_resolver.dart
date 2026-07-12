@@ -1,3 +1,4 @@
+import 'package:onchain_proto/src/exception/exception.dart';
 import 'package:onchain_proto/src/types/types.dart';
 
 abstract class TypeResolver {
@@ -53,7 +54,7 @@ abstract class TypeResolver {
     final String raw = isAbsolute ? typeName.substring(1) : typeName;
 
     if (raw.isEmpty) {
-      throw ArgumentError('typeName must not be empty (got "$typeName")');
+      throw OnChainProtoException('typeName must not be empty (got "$typeName")');
     }
 
     final List<String> segments = raw.split('.');

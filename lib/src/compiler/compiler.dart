@@ -1,5 +1,6 @@
 import 'package:onchain_proto/src/compiler/file_builder.dart';
 import 'package:onchain_proto/src/compiler/code_gen.dart';
+import 'package:onchain_proto/src/exception/exception.dart';
 import 'package:onchain_proto/src/types/types.dart';
 import 'package:onchain_proto/src/utils/utils.dart';
 import 'type_resolver.dart';
@@ -123,7 +124,7 @@ class ProtoCompiler extends TypeResolver {
     final package = generatedPackages[packageName];
 
     if (package == null) {
-      throw Exception("Unknown package '$packageName'.");
+      throw OnChainProtoException("Unknown package '$packageName'.");
     }
 
     return package;
@@ -138,7 +139,7 @@ class ProtoCompiler extends TypeResolver {
   List<ProtoSourceFile> sourcFiles(String packageName) {
     final package = tryGetsSourcFiles(packageName);
     if (package == null) {
-      throw Exception("Unknown package '$packageName'.");
+      throw OnChainProtoException("Unknown package '$packageName'.");
     }
 
     return package;

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:blockchain_utils/proto/types/types.dart';
 import 'package:blockchain_utils/utils/string/string.dart';
 import 'package:onchain_proto/src/compiler/compiler.dart';
+import 'package:onchain_proto/src/exception/exception.dart';
 import 'package:onchain_proto/src/parser/proto_parser.dart';
 import 'package:onchain_proto/src/types/types.dart';
 
@@ -64,7 +65,7 @@ class OnChainProtoUtils {
         final types = e.file.typesName();
         return types.contains(typeName);
       },
-      orElse: () => throw Exception(
+      orElse: () => throw OnChainProtoException(
         "Type not find $message $typeName /  ${files.files.expand((e) => e.file.typesName().toList()).toList()}",
       ),
     );

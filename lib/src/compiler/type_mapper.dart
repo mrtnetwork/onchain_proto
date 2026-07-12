@@ -1,6 +1,7 @@
 import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:onchain_proto/src/compiler/compiler.dart';
 import 'package:onchain_proto/src/compiler/dart_converter.dart';
+import 'package:onchain_proto/src/exception/exception.dart';
 import 'package:onchain_proto/src/types/types.dart';
 import 'package:onchain_proto/src/utils/utils.dart';
 
@@ -172,7 +173,7 @@ abstract final class ProtoRuntimeTypeMapper {
             : 'ProtoFieldType.message';
       case ProtoRepeated():
       case ProtoMap():
-        throw StateError(
+        throw OnChainProtoException(
           'repeated/map cannot be nested directly inside repeated/map in proto3',
         );
     }
@@ -314,7 +315,9 @@ abstract final class ProtoRuntimeTypeMapper {
         return '$accessor.map((e) => $innerExpr).toList()';
       case ProtoMap(value: final v, :final key):
         if (key is! ProtoScalar) {
-          throw Exception("unsuported map");
+          throw OnChainProtoException(
+            "toJson only support for premitive and message types.",
+          );
         }
         final valueExpr = toJsonValueExpr(
           type: v,
@@ -689,7 +692,7 @@ abstract final class ProtoRuntimeTypeMapper {
         return 'decode.getListOfBytes($tag).map((b) => $className.deserialize(b)).toList()';
       case ProtoRepeated():
       case ProtoMap():
-        throw StateError(
+        throw OnChainProtoException(
           'repeated/map cannot be nested directly inside repeated in proto3',
         );
     }
