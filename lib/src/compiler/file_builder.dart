@@ -57,7 +57,10 @@ class ProtoPackageWriter {
     return '${_getPackageRoot(packageName)}/${_normalizePackage(packageName)}/models.dart';
   }
 
-  String messageLibraryUri({required String packageName, required String fileName}) {
+  String messageLibraryUri({
+    required String packageName,
+    required String fileName,
+  }) {
     return '${_getPackageRoot(packageName)}/${_normalizePackage(packageName)}/src/$fileName';
   }
 
@@ -86,7 +89,10 @@ class ProtoPackageWriter {
     return GeneratedProtoPackage(files: generatedFiles, package: package);
   }
 
-  GeneratedProtoFile _createOutputFile(ProtoFile protoFile, Set<String> usedNames) {
+  GeneratedProtoFile _createOutputFile(
+    ProtoFile protoFile,
+    Set<String> usedNames,
+  ) {
     final skip = _getSkipFile(protoFile);
     final sourceDir = packageSourceDirectory(protoFile.package);
 
@@ -114,14 +120,19 @@ class ProtoPackageWriter {
     required ProtoCompiler builder,
     bool onlyRefrences = false,
   }) {
-    final result = file.file.toDartProtoMessages(builder, onlyRefrences: onlyRefrences);
+    final result = file.file.toDartProtoMessages(
+      builder,
+      onlyRefrences: onlyRefrences,
+    );
     if (result == null) return null;
     final skip = _getSkipFile(file.file);
     if (skip != null) {
       return ProtoWriteFileResult(
         fileData: result,
         importPath: skip.importUri,
-        srcPath: skip.allowInSrc ? 'src/${file.outputPath.split("/").last}' : null,
+        srcPath: skip.allowInSrc
+            ? 'src/${file.outputPath.split("/").last}'
+            : null,
       );
     }
     final output = File(file.outputPath)..createSync(recursive: true);

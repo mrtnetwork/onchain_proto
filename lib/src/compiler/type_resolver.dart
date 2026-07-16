@@ -54,7 +54,9 @@ abstract class TypeResolver {
     final String raw = isAbsolute ? typeName.substring(1) : typeName;
 
     if (raw.isEmpty) {
-      throw OnChainProtoException('typeName must not be empty (got "$typeName")');
+      throw OnChainProtoException(
+        'typeName must not be empty (got "$typeName")',
+      );
     }
 
     final List<String> segments = raw.split('.');
@@ -64,7 +66,9 @@ abstract class TypeResolver {
         : _resolveRelative(origin, segments, enclosingMessage);
 
     final String typeNameOnly = resolved.rest.last;
-    final String? nestedName = resolved.rest.length > 1 ? resolved.rest.join('.') : null;
+    final String? nestedName = resolved.rest.length > 1
+        ? resolved.rest.join('.')
+        : null;
 
     return ProtoMessageRefrence(
       fullName: typeName,
@@ -95,7 +99,9 @@ abstract class TypeResolver {
     if (globalMatch != null) return globalMatch;
 
     return _Split(
-      segments.length > 1 ? segments.sublist(0, segments.length - 1).join('.') : '',
+      segments.length > 1
+          ? segments.sublist(0, segments.length - 1).join('.')
+          : '',
       <String>[segments.last],
     );
   }
@@ -129,14 +135,20 @@ abstract class TypeResolver {
     // Step 0: does origin itself directly declare this type (or nested
     // path), checked via the rich declaration list first, then the
     // legacy types() set.
-    final _Split? inOriginDecl = _verifyTypeInPackageByDeclarations(origin, segments);
+    final _Split? inOriginDecl = _verifyTypeInPackageByDeclarations(
+      origin,
+      segments,
+    );
     if (inOriginDecl != null) return inOriginDecl;
     final _Split? inOrigin = _verifyTypeInPackage(origin, segments);
     if (inOrigin != null) return inOrigin;
 
     // Step 1: try the relative name's own leading segments as a package,
     // with no origin prefix.
-    final _Split? standaloneDecl = _splitVerifiedByDeclarations(<String>[], segments);
+    final _Split? standaloneDecl = _splitVerifiedByDeclarations(
+      <String>[],
+      segments,
+    );
     if (standaloneDecl != null) return standaloneDecl;
     final _Split? standalone = _splitVerifiedByTypes(<String>[], segments);
     if (standalone != null) return standalone;
@@ -146,7 +158,10 @@ abstract class TypeResolver {
     for (final scope in _scopesFromOrigin(origin)) {
       if (scope.isEmpty) continue;
       if (scope == origin) continue; // already checked in step 0
-      final _Split? declSplit = _splitVerifiedByDeclarations(scope.split('.'), segments);
+      final _Split? declSplit = _splitVerifiedByDeclarations(
+        scope.split('.'),
+        segments,
+      );
       if (declSplit != null) return declSplit;
       final _Split? split = _splitVerifiedByTypes(scope.split('.'), segments);
       if (split != null) return split;
@@ -237,7 +252,10 @@ abstract class TypeResolver {
 
   /// Checks whether [package] directly declares the type path formed by
   /// a leading run of [segments] (longest possible run first).
-  _Split? _verifyTypeInPackageByDeclarations(String package, List<String> segments) {
+  _Split? _verifyTypeInPackageByDeclarations(
+    String package,
+    List<String> segments,
+  ) {
     final List<ProtoDeclaration> declared = getPackageDeclaration(package);
     if (declared.isEmpty) return null;
     for (int len = segments.length; len >= 1; len--) {
@@ -255,7 +273,10 @@ abstract class TypeResolver {
   /// down to requiring at least 1 leftover segment), and for each
   /// candidate package, verifies via [getPackageDeclaration] that it
   /// actually declares the remaining segments as a type path.
-  _Split? _splitVerifiedByDeclarations(List<String> scopeParts, List<String> segments) {
+  _Split? _splitVerifiedByDeclarations(
+    List<String> scopeParts,
+    List<String> segments,
+  ) {
     final int maxExtra = segments.length - 1;
     for (int extra = maxExtra; extra >= 0; extra--) {
       final List<String> candidateParts = <String>[
@@ -266,7 +287,9 @@ abstract class TypeResolver {
       final String candidatePackage = candidateParts.join('.');
       final List<String> rest = segments.sublist(extra);
       if (rest.isEmpty) continue;
-      final List<ProtoDeclaration> declared = getPackageDeclaration(candidatePackage);
+      final List<ProtoDeclaration> declared = getPackageDeclaration(
+        candidatePackage,
+      );
       if (declared.isEmpty) continue;
       for (int restLen = rest.length; restLen >= 1; restLen--) {
         final String candidateType = rest.sublist(0, restLen).join('.');
@@ -297,7 +320,8 @@ abstract class TypeResolver {
         if (!has) continue;
 
         final List<String> pkgParts = pkg.split('.');
-        final bool nameMatches = leftover.isEmpty || _endsWith(pkgParts, leftover);
+        final bool nameMatches =
+            leftover.isEmpty || _endsWith(pkgParts, leftover);
 
         if (bestPackage == null) {
           bestPackage = pkg;
@@ -335,7 +359,10 @@ abstract class TypeResolver {
     return null;
   }
 
-  _Split? _splitVerifiedByTypes(List<String> scopeParts, List<String> segments) {
+  _Split? _splitVerifiedByTypes(
+    List<String> scopeParts,
+    List<String> segments,
+  ) {
     final int maxExtra = segments.length - 1;
     for (int extra = maxExtra; extra >= 0; extra--) {
       final List<String> candidateParts = <String>[
@@ -371,7 +398,8 @@ abstract class TypeResolver {
         if (!types(pkg).contains(candidateType)) continue;
 
         final List<String> pkgParts = pkg.split('.');
-        final bool nameMatches = leftover.isEmpty || _endsWith(pkgParts, leftover);
+        final bool nameMatches =
+            leftover.isEmpty || _endsWith(pkgParts, leftover);
 
         if (bestPackage == null) {
           bestPackage = pkg;
@@ -394,7 +422,9 @@ abstract class TypeResolver {
 
   bool _endsWith(List<String> pkgParts, List<String> tail) {
     if (pkgParts.length < tail.length) return false;
-    final List<String> pkgTail = pkgParts.sublist(pkgParts.length - tail.length);
+    final List<String> pkgTail = pkgParts.sublist(
+      pkgParts.length - tail.length,
+    );
     for (int i = 0; i < tail.length; i++) {
       if (pkgTail[i] != tail[i]) return false;
     }
@@ -473,7 +503,9 @@ abstract class TypeResolver {
     final int maxLen = segments.length - 1;
     final int cap = maxLen < originParts.length ? maxLen : originParts.length;
     for (int len = cap; len >= 1; len--) {
-      final List<String> originTail = originParts.sublist(originParts.length - len);
+      final List<String> originTail = originParts.sublist(
+        originParts.length - len,
+      );
       final List<String> segHead = segments.sublist(0, len);
       bool matches = true;
       for (int i = 0; i < len; i++) {

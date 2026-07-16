@@ -38,7 +38,10 @@ abstract final class ProtoRuntimeTypeMapper {
         return _dartScalarType(st);
       case ProtoMessageRefrence(:final fullTypeName):
         return importRefrences.qualifyType(
-          OnChainProtoUtils.className(fullTypeName(), prefix: resolver.classNamePrefix),
+          OnChainProtoUtils.className(
+            fullTypeName(),
+            prefix: resolver.classNamePrefix,
+          ),
           type,
         );
       case ProtoRepeated(inner: final inner):
@@ -68,7 +71,8 @@ abstract final class ProtoRuntimeTypeMapper {
     required bool required,
     required ProtoCompiler resolver,
   }) {
-    if (isNullable(type: type, optional: optional, required: required)) return null;
+    if (isNullable(type: type, optional: optional, required: required))
+      return null;
     switch (type) {
       case ProtoRepeated():
         return 'const []';
@@ -163,7 +167,10 @@ abstract final class ProtoRuntimeTypeMapper {
   /// Resolves a bare (non-repeated, non-map) ProtoType to its
   /// ProtoFieldType, used both for the top-level fieldType of a plain
   /// field and for repeatedType/mapKeyType/mapValueType.
-  static String _wireFieldTypeForBare(ProtoType type, {required ProtoCompiler resolver}) {
+  static String _wireFieldTypeForBare(
+    ProtoType type, {
+    required ProtoCompiler resolver,
+  }) {
     switch (type) {
       case ProtoScalar(type: final st):
         return _wireFieldType(st);
@@ -179,9 +186,14 @@ abstract final class ProtoRuntimeTypeMapper {
     }
   }
 
-  static String fieldConfigExpr(ProtoField f, {required ProtoCompiler resolver}) {
+  static String fieldConfigExpr(
+    ProtoField f, {
+    required ProtoCompiler resolver,
+  }) {
     final tag = f.tag;
-    final opts = ProtoOptionRenderer.renderList(resolver.builder.filterFieldOptions(f));
+    final opts = ProtoOptionRenderer.renderList(
+      resolver.builder.filterFieldOptions(f),
+    );
     final optsArg = f.options.isEmpty ? '' : ', options: $opts';
     final optionalFlag = f.optional ? ', hasOptionalFlags: true' : '';
     final type = f.type;
@@ -276,7 +288,10 @@ abstract final class ProtoRuntimeTypeMapper {
           nullable: nullable,
           bytesEncoding: bytesEncoding,
         );
-      case ProtoMessageRefrence(:final isGoogleTimestamp, :final isGoogleDuration):
+      case ProtoMessageRefrence(
+        :final isGoogleTimestamp,
+        :final isGoogleDuration,
+      ):
         if (resolver.isEnum(type)) {
           // Canonical protobuf JSON encodes enums as their original proto
           // identifier string, not the wire int - matches the `from()`
@@ -536,7 +551,9 @@ abstract final class ProtoRuntimeTypeMapper {
     required bool defaultOnMissing,
   }) {
     final q = "'$key'";
-    final acceptCammelCaseParams = acceptCamelCase ? ", acceptCamelCase: true" : "";
+    final acceptCammelCaseParams = acceptCamelCase
+        ? ", acceptCamelCase: true"
+        : "";
     final bool allowMissingParam = (!optional && defaultOnMissing);
     switch (st) {
       case ProtoScalarType.double_:
@@ -555,7 +572,9 @@ abstract final class ProtoRuntimeTypeMapper {
       case ProtoScalarType.sint64:
       case ProtoScalarType.fixed64:
       case ProtoScalarType.sfixed64:
-        String onMissing = allowMissingParam ? ", onMissing:() => BigInt.zero" : "";
+        String onMissing = allowMissingParam
+            ? ", onMissing:() => BigInt.zero"
+            : "";
         return "json.valueAsBigInt<BigInt${optional ? '?' : ''}>($q$acceptCammelCaseParams$onMissing)";
       case ProtoScalarType.bool_:
         String onMissing = allowMissingParam ? ", onMissing:() => false" : "";
@@ -630,7 +649,10 @@ abstract final class ProtoRuntimeTypeMapper {
 
       case ProtoMessageRefrence(:final fullTypeName):
         final className = importRefrences.qualifyType(
-          OnChainProtoUtils.className(fullTypeName(), prefix: resolver.classNamePrefix),
+          OnChainProtoUtils.className(
+            fullTypeName(),
+            prefix: resolver.classNamePrefix,
+          ),
           type,
         );
         if (resolver.isEnum(type)) {
@@ -681,7 +703,10 @@ abstract final class ProtoRuntimeTypeMapper {
         return 'decode.getListOrEmpty<$dartType>($tag)';
       case ProtoMessageRefrence(:final fullTypeName):
         final className = importRefrences.qualifyType(
-          OnChainProtoUtils.className(fullTypeName(), prefix: resolver.classNamePrefix),
+          OnChainProtoUtils.className(
+            fullTypeName(),
+            prefix: resolver.classNamePrefix,
+          ),
           inner,
         );
         if (resolver.isEnum(inner)) {
@@ -710,7 +735,10 @@ abstract final class ProtoRuntimeTypeMapper {
         final keyDart = _dartScalarType(key);
         final valueDartType = _dartScalarType(value);
         return 'decode.getMap<$keyDart, $valueDartType>($tag)';
-      case (ProtoScalar(type: final key), ProtoMessageRefrence(:final fullTypeName)):
+      case (
+        ProtoScalar(type: final key),
+        ProtoMessageRefrence(:final fullTypeName),
+      ):
         final keyDart = _dartScalarType(key);
         final className = importRefrences.qualifyType(
           OnChainProtoUtils.className(
@@ -723,7 +751,10 @@ abstract final class ProtoRuntimeTypeMapper {
             "        fieldNumber: $tag,\n"
             '        keyMapper: (v) => JsonParser.valueAs<$keyDart>(v),\n'
             '        valueMapper: (v) => $className.deserialize(JsonParser.valueAsBytes<List<int>>(v)))\n';
-      case (ProtoMessageRefrence(:final fullTypeName), ProtoScalar(:final type)):
+      case (
+        ProtoMessageRefrence(:final fullTypeName),
+        ProtoScalar(:final type),
+      ):
         final keyDart = _dartScalarType(type);
         final className = importRefrences.qualifyType(
           OnChainProtoUtils.className(

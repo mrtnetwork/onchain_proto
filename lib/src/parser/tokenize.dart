@@ -1,4 +1,12 @@
-enum ProtoTokenType { identifier, number, string, symbol, lineComment, blockComment, eof }
+enum ProtoTokenType {
+  identifier,
+  number,
+  string,
+  symbol,
+  lineComment,
+  blockComment,
+  eof,
+}
 
 class ProtoToken {
   final ProtoTokenType type;
@@ -71,7 +79,8 @@ class ProtoTokenizer {
     if (c == '/' && _pos + 1 < src.length && src[_pos + 1] == '*') {
       final start = _pos;
       _pos += 2;
-      while (_pos + 1 < src.length && !(src[_pos] == '*' && src[_pos + 1] == '/')) {
+      while (_pos + 1 < src.length &&
+          !(src[_pos] == '*' && src[_pos + 1] == '/')) {
         if (src[_pos] == '\n') _line++;
         _pos++;
       }
@@ -92,7 +101,11 @@ class ProtoTokenizer {
         _pos++;
       }
       _pos++;
-      return ProtoToken(ProtoTokenType.string, src.substring(start, _pos), startLine);
+      return ProtoToken(
+        ProtoTokenType.string,
+        src.substring(start, _pos),
+        startLine,
+      );
     }
 
     // Hex integer literal: 0x... / 0X... (e.g. `EDITION_MAX = 0x7FFFFFFF;`
@@ -109,13 +122,18 @@ class ProtoTokenizer {
       while (_pos < src.length && _isHexDigit(src[_pos])) {
         _pos++;
       }
-      return ProtoToken(ProtoTokenType.number, src.substring(start, _pos), startLine);
+      return ProtoToken(
+        ProtoTokenType.number,
+        src.substring(start, _pos),
+        startLine,
+      );
     }
 
     // Number (handles -, ., digits, and 0x/0X hex literals; good enough for
     // field numbers / enum values / floats / proto2-style hex constants
     // like `EDITION_MAX = 0x7FFFFFFF;`).
-    if (_isDigit(c) || (c == '-' && _pos + 1 < src.length && _isDigit(src[_pos + 1]))) {
+    if (_isDigit(c) ||
+        (c == '-' && _pos + 1 < src.length && _isDigit(src[_pos + 1]))) {
       final start = _pos;
       if (c == '-') _pos++;
 
@@ -132,7 +150,11 @@ class ProtoTokenizer {
         while (_pos < src.length && _isHexDigit(src[_pos])) {
           _pos++;
         }
-        return ProtoToken(ProtoTokenType.number, src.substring(start, _pos), startLine);
+        return ProtoToken(
+          ProtoTokenType.number,
+          src.substring(start, _pos),
+          startLine,
+        );
       }
 
       while (_pos < src.length &&
@@ -144,7 +166,11 @@ class ProtoTokenizer {
               src[_pos] == '-')) {
         _pos++;
       }
-      return ProtoToken(ProtoTokenType.number, src.substring(start, _pos), startLine);
+      return ProtoToken(
+        ProtoTokenType.number,
+        src.substring(start, _pos),
+        startLine,
+      );
     }
 
     // Identifier (letters, digits, underscore). Proto identifiers can't start with a digit
@@ -156,7 +182,11 @@ class ProtoTokenizer {
       while (_pos < src.length && _isIdentPart(src[_pos])) {
         _pos++;
       }
-      return ProtoToken(ProtoTokenType.identifier, src.substring(start, _pos), startLine);
+      return ProtoToken(
+        ProtoTokenType.identifier,
+        src.substring(start, _pos),
+        startLine,
+      );
     }
 
     // Symbols.

@@ -82,7 +82,8 @@ class OnChainProtoUtils {
   static const googleProtobufDuration = "Duration";
   static const goProtoStdDuration = "gogoproto.stdduration";
   static bool isGoogleTimestamp(String package, String type) {
-    return package == googleProtobufPackage && type == googleProtobufTimestampType;
+    return package == googleProtobufPackage &&
+        type == googleProtobufTimestampType;
   }
 
   static bool isGoogleDuration(String package, String type) {
@@ -204,7 +205,10 @@ class OnChainProtoUtils {
 
   static String snakeToCamel(String input, {required bool capitalizeFirst}) {
     if (input.isEmpty) return input;
-    final parts = input.split(RegExp(r'[_\-]+')).where((p) => p.isNotEmpty).toList();
+    final parts = input
+        .split(RegExp(r'[_\-]+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
     if (parts.isEmpty) return input;
 
     final buf = StringBuffer();
@@ -232,7 +236,9 @@ class OnChainProtoUtils {
     // mixed-case, e.g. a deliberate acronym like "ID" mid-word in a
     // genuinely camelCase source), leave the tail untouched.
     final isShouting = word.length > 1 && word == word.toUpperCase();
-    final tail = isShouting ? word.substring(1).toLowerCase() : word.substring(1);
+    final tail = isShouting
+        ? word.substring(1).toLowerCase()
+        : word.substring(1);
 
     final first = capitalize ? word[0].toUpperCase() : word[0].toLowerCase();
     return '$first$tail';
@@ -249,7 +255,9 @@ class OnChainProtoUtils {
   static String? comment(String comments, {String indent = ''}) {
     final lines = comments.split('\n').where((e) => !e.contains("TODO"));
     if (lines.isEmpty) return null;
-    return lines.map((l) => '$indent/// ${_escapeDocComment(l)}'.trimRight()).join('\n');
+    return lines
+        .map((l) => '$indent/// ${_escapeDocComment(l)}'.trimRight())
+        .join('\n');
   }
 
   static String _escapeDocComment(String line) {

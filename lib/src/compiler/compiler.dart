@@ -26,7 +26,10 @@ class ProtoCompiler extends TypeResolver {
     );
 
     compiler.addSourceFiles(
-      OnChainProtoUtils.findProtoFiles(directory: sourceDirectory, resolver: compiler),
+      OnChainProtoUtils.findProtoFiles(
+        directory: sourceDirectory,
+        resolver: compiler,
+      ),
     );
 
     return compiler;
@@ -68,19 +71,23 @@ class ProtoCompiler extends TypeResolver {
   List<ProtoDeclaration> _messages = [];
 
   bool messageHasRefrence(ProtoMessage message) {
-    return _messages.contains(message) || _refrences.any((e) => message.isEqualTo(e));
+    return _messages.contains(message) ||
+        _refrences.any((e) => message.isEqualTo(e));
   }
 
   bool refrenceExists(ProtoMessageRefrence refrence) {
-    return _messages.any((e) => e.isEqualTo(refrence)) || _refrences.contains(refrence);
+    return _messages.any((e) => e.isEqualTo(refrence)) ||
+        _refrences.contains(refrence);
   }
 
   bool enumHasRefrences(ProtoEnum message) {
-    return _messages.contains(message) || _refrences.any((e) => message.isEqualTo(e));
+    return _messages.contains(message) ||
+        _refrences.any((e) => message.isEqualTo(e));
   }
 
   bool fileHasRefrence(ProtoFile file) {
-    return file.messages.any(messageHasRefrence) || file.enums.any(enumHasRefrences);
+    return file.messages.any(messageHasRefrence) ||
+        file.enums.any(enumHasRefrences);
   }
 
   void compile({bool onlyRefrences = false}) {
@@ -114,7 +121,10 @@ class ProtoCompiler extends TypeResolver {
     }
 
     for (final entry in grouped.entries) {
-      final output = writer.createPackage(files: entry.value, package: entry.key);
+      final output = writer.createPackage(
+        files: entry.value,
+        package: entry.key,
+      );
 
       generatedPackages[entry.key] = output;
     }
@@ -174,7 +184,10 @@ class ProtoCompiler extends TypeResolver {
   }
 
   bool isEnum(ProtoMessageRefrence reference) {
-    return enumsByPackage[reference.package]?.contains(reference.fullTypeName()) ?? false;
+    return enumsByPackage[reference.package]?.contains(
+          reference.fullTypeName(),
+        ) ??
+        false;
   }
 
   @override

@@ -47,7 +47,10 @@ extension ProtoFileToDartProtoMessages on ProtoFile {
     buf.writeln();
 
     for (final e in enums) {
-      final compile = e.toDartProtoEnum(resolver: resolver, onlyRefrences: onlyRefrences);
+      final compile = e.toDartProtoEnum(
+        resolver: resolver,
+        onlyRefrences: onlyRefrences,
+      );
       if (compile == null) continue;
       buf.writeln(compile);
       buf.writeln();
@@ -67,7 +70,10 @@ extension ProtoFileToDartProtoMessages on ProtoFile {
       buf.writeln();
     }
 
-    return ProtoConvertFileResult(classInfo: classNames, generatedData: buf.toString());
+    return ProtoConvertFileResult(
+      classInfo: classNames,
+      generatedData: buf.toString(),
+    );
   }
 }
 
@@ -78,7 +84,10 @@ extension ProtoEnumToDartProtoEnum on ProtoEnum {
   ///  - `from(Object? value)` - matches `.value`, `.name`, or `.protoName`,
   ///    so it accepts whatever shape the caller has on hand (wire int,
   ///    Dart enum name, or the original proto string).
-  String? toDartProtoEnum({required ProtoCompiler resolver, bool onlyRefrences = false}) {
+  String? toDartProtoEnum({
+    required ProtoCompiler resolver,
+    bool onlyRefrences = false,
+  }) {
     if (onlyRefrences && !resolver.enumHasRefrences(this)) {
       return null;
     }
@@ -106,7 +115,9 @@ extension ProtoEnumToDartProtoEnum on ProtoEnum {
         }
       }
       final dartValueName = OnChainProtoUtils.enumValueName(v.name);
-      buf.writeln("  $dartValueName(${v.value}, '${v.name}')${isLast ? ';' : ','}");
+      buf.writeln(
+        "  $dartValueName(${v.value}, '${v.name}')${isLast ? ';' : ','}",
+      );
     }
     buf.writeln();
     buf.writeln('  const $dartName(this.value, this.protoName);');
@@ -115,11 +126,15 @@ extension ProtoEnumToDartProtoEnum on ProtoEnum {
     buf.writeln('  @override');
     buf.writeln('  final int value;');
     buf.writeln();
-    buf.writeln('  /// The original proto identifier, e.g. "VOTE_OPTION_UNSPECIFIED".');
+    buf.writeln(
+      '  /// The original proto identifier, e.g. "VOTE_OPTION_UNSPECIFIED".',
+    );
     buf.writeln('  @override');
     buf.writeln('  final String protoName;');
     buf.writeln();
-    buf.writeln('  /// Looks up a value by its proto wire int. Throws if not found.');
+    buf.writeln(
+      '  /// Looks up a value by its proto wire int. Throws if not found.',
+    );
     buf.writeln('  static $dartName fromValue(int? value) {');
     buf.writeln('    return $dartName.values.firstWhere(');
     buf.writeln('      (e) => e.value == value,');
@@ -129,8 +144,12 @@ extension ProtoEnumToDartProtoEnum on ProtoEnum {
     buf.writeln('    );');
     buf.writeln('  }');
     buf.writeln();
-    buf.writeln('  /// Looks up a value by wire int, Dart enum name, or original proto');
-    buf.writeln('  /// name (whichever [value] happens to be). Throws if not found.');
+    buf.writeln(
+      '  /// Looks up a value by wire int, Dart enum name, or original proto',
+    );
+    buf.writeln(
+      '  /// name (whichever [value] happens to be). Throws if not found.',
+    );
     buf.writeln('  static $dartName from(Object? value) {');
     buf.writeln('    return $dartName.values.firstWhere(');
     buf.writeln(
@@ -168,7 +187,9 @@ extension ProtoMessageToDartProtoMessage on ProtoMessage {
       if (c != null) buf.writeln(c);
     }
     final mixins = resolver.builder.mixinsFor(this, resolver, importRefrences);
-    buf.write('class $dartName extends ${resolver.builder.messageBaseClassName}');
+    buf.write(
+      'class $dartName extends ${resolver.builder.messageBaseClassName}',
+    );
 
     if (mixins.isNotEmpty) {
       buf.write(' with ${mixins.join(', ')}');
@@ -250,7 +271,11 @@ extension ProtoMessageToDartProtoMessage on ProtoMessage {
     if (deserialize != null) {
       buf.writeln(deserialize);
     }
-    final data = resolver.builder.buildExtraMembers(this, resolver, importRefrences);
+    final data = resolver.builder.buildExtraMembers(
+      this,
+      resolver,
+      importRefrences,
+    );
     if (data != null) {
       buf.writeln(data);
     }

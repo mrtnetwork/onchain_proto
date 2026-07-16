@@ -11,7 +11,8 @@ class ProtoParseException extends OnChainProtoException {
   const ProtoParseException(super.message, this.line, {this.details});
 
   @override
-  String toString() => 'ProtoParseException at line $line: $message, details: $details';
+  String toString() =>
+      'ProtoParseException at line $line: $message, details: $details';
 }
 
 class ProtoFileParser {
@@ -35,11 +36,17 @@ class ProtoFileParser {
     required String path,
     required String name,
   }) {
-    _ProtoFileParser instance = _ProtoFileParser(resolver: resolver, source: source);
+    _ProtoFileParser instance = _ProtoFileParser(
+      resolver: resolver,
+      source: source,
+    );
     final file = instance.parseFile(path: path, name: name);
 
     List<ProtoDeclaration> allDeclarations = [];
-    void collectDeclarations(List<ProtoMessage> messages, List<ProtoEnum> enums) {
+    void collectDeclarations(
+      List<ProtoMessage> messages,
+      List<ProtoEnum> enums,
+    ) {
       allDeclarations.addAll(messages);
       allDeclarations.addAll(enums);
     }
@@ -80,13 +87,24 @@ class _ProtoFileParser {
   final List<ProtoEnum> _nestedEnums = [];
 
   final List<ProtoExtend> _extends = [];
-  _ProtoFileParser._({required this.packageName, required List<ProtoToken> tokens})
-    : _tokens = tokens.immutable;
+  _ProtoFileParser._({
+    required this.packageName,
+    required List<ProtoToken> tokens,
+  }) : _tokens = tokens.immutable;
 
-  factory _ProtoFileParser({required String source, required ProtoCompiler resolver}) {
+  factory _ProtoFileParser({
+    required String source,
+    required ProtoCompiler resolver,
+  }) {
     final tokens = ProtoTokenizer(source).tokenize();
-    _ProtoFileParser instance = _ProtoFileParser._(packageName: "", tokens: tokens);
-    return _ProtoFileParser._(packageName: instance._getPackageName(), tokens: tokens);
+    _ProtoFileParser instance = _ProtoFileParser._(
+      packageName: "",
+      tokens: tokens,
+    );
+    return _ProtoFileParser._(
+      packageName: instance._getPackageName(),
+      tokens: tokens,
+    );
   }
 
   ProtoToken get _cur {
@@ -136,7 +154,10 @@ class _ProtoFileParser {
   ProtoToken _expect(String text) {
     _skipCommentsCollecting();
     if (_cur.text != text) {
-      throw ProtoParseException('expected "$text" but found "${_cur.text}"', _cur.line);
+      throw ProtoParseException(
+        'expected "$text" but found "${_cur.text}"',
+        _cur.line,
+      );
     }
     return _advance();
   }
@@ -232,7 +253,10 @@ class _ProtoFileParser {
           _advance(); // stray semicolon
           break;
         default:
-          throw ProtoParseException('unexpected top-level token "$keyword"', _cur.line);
+          throw ProtoParseException(
+            'unexpected top-level token "$keyword"',
+            _cur.line,
+          );
       }
     }
     if (package == null) {
@@ -511,7 +535,12 @@ class _ProtoFileParser {
     final value = int.parse(numText);
     final options = _parseFieldOptionsOpt();
     _expect(';');
-    return ProtoEnumValue(name: name, value: value, comments: comments, options: options);
+    return ProtoEnumValue(
+      name: name,
+      value: value,
+      comments: comments,
+      options: options,
+    );
   }
 
   void _skipReserved() {
@@ -543,13 +572,18 @@ class _ProtoFileParser {
     _expect(';');
   }
 
-  ParsedProtobufMessage _withParent(ParsedProtobufMessage parsed, ProtoMessage parent) {
+  ParsedProtobufMessage _withParent(
+    ParsedProtobufMessage parsed,
+    ProtoMessage parent,
+  ) {
     final message = parsed.message.copyWith(parent: parent);
 
     return ParsedProtobufMessage(
       message: message,
       enums: parsed.enums.map((e) => e.copyWith(parent: message)).toList(),
-      nestedMessages: parsed.nestedMessages.map((e) => _withParent(e, message)).toList(),
+      nestedMessages: parsed.nestedMessages
+          .map((e) => _withParent(e, message))
+          .toList(),
     );
   }
 
@@ -666,12 +700,19 @@ class _ProtoFileParser {
     }
     _expect('}');
 
-    return ProtoExtend(type: type, comments: comments, options: options, fields: fields);
+    return ProtoExtend(
+      type: type,
+      comments: comments,
+      options: options,
+      fields: fields,
+    );
   }
 
   List<ProtoField> _parseOneof() {
     _expect('oneof');
-    _expectType(ProtoTokenType.identifier); // oneof group name (not modeled - flattened)
+    _expectType(
+      ProtoTokenType.identifier,
+    ); // oneof group name (not modeled - flattened)
     _expect('{');
     final fields = <ProtoField>[];
     while (!_check('}')) {
@@ -791,7 +832,12 @@ class _ProtoFileParser {
     }
     _expect('}');
 
-    return ProtoService(name: name, comments: comments, options: options, rpcs: rpcs);
+    return ProtoService(
+      name: name,
+      comments: comments,
+      options: options,
+      rpcs: rpcs,
+    );
   }
 
   ProtoRpc _parseRpc() {

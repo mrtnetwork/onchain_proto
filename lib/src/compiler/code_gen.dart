@@ -85,7 +85,10 @@ abstract class ProtoCodegenTarget {
   /// always-included packages), and following every field/service type
   /// reference outward from there. Returns `null` for targets that don't
   /// support references-only mode (e.g. [DefaultProtoCodegenTarget]).
-  ({List<ProtoMessageRefrence> references, List<ProtoDeclaration> declarations})?
+  ({
+    List<ProtoMessageRefrence> references,
+    List<ProtoDeclaration> declarations,
+  })?
   computeReferenceClosure(Map<String, GeneratedProtoPackage> generatedPackages);
 
   /// Rewrites each package's files so that an RPC request message carries
@@ -204,8 +207,13 @@ class DefaultProtoCodegenTarget implements ProtoCodegenTarget {
   String get messageBaseClassName => "IProtoMessage";
 
   @override
-  ({List<ProtoDeclaration> declarations, List<ProtoMessageRefrence> references})?
-  computeReferenceClosure(Map<String, GeneratedProtoPackage> generatedPackages) {
+  ({
+    List<ProtoDeclaration> declarations,
+    List<ProtoMessageRefrence> references,
+  })?
+  computeReferenceClosure(
+    Map<String, GeneratedProtoPackage> generatedPackages,
+  ) {
     return null;
   }
 
@@ -228,9 +236,10 @@ class DefaultProtoCodegenTarget implements ProtoCodegenTarget {
               resolved.containsKey(rpc.request.package),
               "unknwon package ${rpc.request.package}",
             );
-            final sourceFile = resolved[rpc.request.package]!.firstWhereNullable((file) {
-              return file.messages.any((m) => m.isEqualTo(rpc.request));
-            });
+            final sourceFile = resolved[rpc.request.package]!
+                .firstWhereNullable((file) {
+                  return file.messages.any((m) => m.isEqualTo(rpc.request));
+                });
             if (sourceFile == null) {
               continue;
             }
@@ -248,7 +257,9 @@ class DefaultProtoCodegenTarget implements ProtoCodegenTarget {
                     return message;
                   }
                   assert(message.services.isEmpty, "hash service!");
-                  return message.copyWith(services: [...message.services, option]);
+                  return message.copyWith(
+                    services: [...message.services, option],
+                  );
                 }).toList(),
               ),
             );
@@ -267,14 +278,19 @@ class DefaultProtoCodegenTarget implements ProtoCodegenTarget {
     ProtoSyntax syntax,
   ) {
     final buf = StringBuffer();
-    List<ProtoOption> messageOptions = filterMessageOptions(message, message.services);
+    List<ProtoOption> messageOptions = filterMessageOptions(
+      message,
+      message.services,
+    );
     buf.writeln('  @override');
     buf.writeln('  ProtoMessageConfig protoConfig() => protoConfigStatic();');
     buf.writeln();
     buf.writeln('  static ProtoMessageConfig protoConfigStatic() {');
     buf.writeln('    return ProtoMessageConfig(');
     buf.writeln('      syntax: ProtoSyntax.${syntax.name},');
-    buf.writeln('      options: ${ProtoOptionRenderer.renderList(messageOptions)},');
+    buf.writeln(
+      '      options: ${ProtoOptionRenderer.renderList(messageOptions)},',
+    );
     buf.writeln('      fields: [');
     for (final f in message.fields) {
       buf.writeln(
@@ -375,7 +391,9 @@ class CosmosProtoCodegenTarget extends DefaultProtoCodegenTarget {
   @override
   List<ProtoOption> filterFieldOptions(ProtoField field) {
     return field.options
-        .where((e) => !(suppressedOptionPrefixes.any((f) => e.name.startsWith(f))))
+        .where(
+          (e) => !(suppressedOptionPrefixes.any((f) => e.name.startsWith(f))),
+        )
         .toList();
   }
 
@@ -389,7 +407,9 @@ class CosmosProtoCodegenTarget extends DefaultProtoCodegenTarget {
       ...services.expand((e) => e.rpc.options),
     ];
     return options
-        .where((e) => !(suppressedOptionPrefixes.any((f) => e.name.startsWith(f))))
+        .where(
+          (e) => !(suppressedOptionPrefixes.any((f) => e.name.startsWith(f))),
+        )
         .toList();
   }
 
@@ -506,7 +526,9 @@ class CosmosProtoCodegenTarget extends DefaultProtoCodegenTarget {
   List<ProtoService> filterServices(List<ProtoService> services) {
     return services
         .where(
-          (e) => knownQueryServices.contains(e.name) || knownTxServices.contains(e.name),
+          (e) =>
+              knownQueryServices.contains(e.name) ||
+              knownTxServices.contains(e.name),
         )
         .toList();
   }
@@ -540,7 +562,9 @@ class CosmosProtoCodegenTarget extends DefaultProtoCodegenTarget {
     if (OnChainProtoUtils.isGoogleTimestamp(message.package, message.name)) {
       buf ??= StringBuffer();
       buf.writeln('  factory $className.fromRfc3339(String timestamp) {');
-      buf.writeln('    final data = ProtoUtils.timestampFromRfc3339(timestamp);');
+      buf.writeln(
+        '    final data = ProtoUtils.timestampFromRfc3339(timestamp);',
+      );
       buf.writeln(
         '    return $className(seconds: BigInt.from(data.seconds), nanos: data.nanos);',
       );
@@ -556,8 +580,12 @@ class CosmosProtoCodegenTarget extends DefaultProtoCodegenTarget {
     if (OnChainProtoUtils.isGoogleDuration(message.package, message.name)) {
       buf ??= StringBuffer();
       buf.writeln('  factory $className.fromString(String duration) {');
-      buf.writeln('    final data = ProtoUtils.googleDurationFromJson(duration);');
-      buf.writeln('    return $className(seconds: data.seconds, nanos: data.nanos);');
+      buf.writeln(
+        '    final data = ProtoUtils.googleDurationFromJson(duration);',
+      );
+      buf.writeln(
+        '    return $className(seconds: data.seconds, nanos: data.nanos);',
+      );
       buf.writeln('  }');
       buf.writeln();
       buf.writeln('  String encodeString({bool asNanos = true})');
@@ -580,8 +608,13 @@ class CosmosProtoCodegenTarget extends DefaultProtoCodegenTarget {
   }
 
   @override
-  ({List<ProtoMessageRefrence> references, List<ProtoDeclaration> declarations})?
-  computeReferenceClosure(Map<String, GeneratedProtoPackage> generatedPackages) {
+  ({
+    List<ProtoMessageRefrence> references,
+    List<ProtoDeclaration> declarations,
+  })?
+  computeReferenceClosure(
+    Map<String, GeneratedProtoPackage> generatedPackages,
+  ) {
     List<ProtoMessageRefrence> references = [];
     List<ProtoDeclaration> declarations = [];
     List<ProtoMessageRefrence> collectTransitiveReferences(
@@ -591,8 +624,12 @@ class CosmosProtoCodegenTarget extends DefaultProtoCodegenTarget {
       List<ProtoMessageRefrence> nestedReferences = [];
       ProtoDeclaration? declaration;
       for (final i in package.files) {
-        declaration ??= i.file.messages.firstWhereNullable((e) => e.isEqualTo(reference));
-        declaration ??= i.file.enums.firstWhereNullable((e) => e.isEqualTo(reference));
+        declaration ??= i.file.messages.firstWhereNullable(
+          (e) => e.isEqualTo(reference),
+        );
+        declaration ??= i.file.enums.firstWhereNullable(
+          (e) => e.isEqualTo(reference),
+        );
         if (declaration != null) break;
       }
       if (declarations.contains(declaration)) return [];
@@ -785,9 +822,10 @@ class ZcashProtoCodegenTarget extends DefaultProtoCodegenTarget {
                 ),
               ],
             );
-            final sourceFile = resolved[rpc.request.package]!.firstWhereNullable((file) {
-              return file.messages.any((m) => m.isEqualTo(rpc.request));
-            });
+            final sourceFile = resolved[rpc.request.package]!
+                .firstWhereNullable((file) {
+                  return file.messages.any((m) => m.isEqualTo(rpc.request));
+                });
             if (sourceFile == null) {
               continue;
             }

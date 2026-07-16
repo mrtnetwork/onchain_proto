@@ -78,7 +78,10 @@ class GeneratedProtoPackage {
 class ProtoConvertFileResult {
   final String generatedData;
   final List<ProtoConvertMessageResult> classInfo;
-  const ProtoConvertFileResult({required this.classInfo, required this.generatedData});
+  const ProtoConvertFileResult({
+    required this.classInfo,
+    required this.generatedData,
+  });
 }
 
 class ProtoConvertMessageResult {
@@ -149,7 +152,9 @@ sealed class ProtoType {
 
   List<ProtoMessageRefrence> refTypes();
 
-  ProtoType resolveRefrences(ProtoMessageRefrence Function(ProtoMessageRefrence) fn);
+  ProtoType resolveRefrences(
+    ProtoMessageRefrence Function(ProtoMessageRefrence) fn,
+  );
 }
 
 class ProtoScalar extends ProtoType with Equality {
@@ -178,7 +183,9 @@ class ProtoScalar extends ProtoType with Equality {
   }
 
   @override
-  ProtoType resolveRefrences(ProtoMessageRefrence Function(ProtoMessageRefrence) fn) {
+  ProtoType resolveRefrences(
+    ProtoMessageRefrence Function(ProtoMessageRefrence) fn,
+  ) {
     return this;
   }
 }
@@ -239,8 +246,10 @@ class ProtoMessageRefrence extends ProtoType with Equality {
     return fn(this);
   }
 
-  bool isGoogleTimestamp() => OnChainProtoUtils.isGoogleTimestamp(package, typeName);
-  bool isGoogleDuration() => OnChainProtoUtils.isGoogleDuration(package, typeName);
+  bool isGoogleTimestamp() =>
+      OnChainProtoUtils.isGoogleTimestamp(package, typeName);
+  bool isGoogleDuration() =>
+      OnChainProtoUtils.isGoogleDuration(package, typeName);
 }
 
 class ProtoMap extends ProtoType with Equality {
@@ -272,7 +281,9 @@ class ProtoMap extends ProtoType with Equality {
   }
 
   @override
-  ProtoType resolveRefrences(ProtoMessageRefrence Function(ProtoMessageRefrence) fn) {
+  ProtoType resolveRefrences(
+    ProtoMessageRefrence Function(ProtoMessageRefrence) fn,
+  ) {
     ProtoType key = this.key;
     ProtoType value = this.value;
     if (key case ProtoMessageRefrence()) {
@@ -313,7 +324,9 @@ class ProtoRepeated extends ProtoType with Equality {
   }
 
   @override
-  ProtoType resolveRefrences(ProtoMessageRefrence Function(ProtoMessageRefrence) fn) {
+  ProtoType resolveRefrences(
+    ProtoMessageRefrence Function(ProtoMessageRefrence) fn,
+  ) {
     ProtoType inner = this.inner;
     if (inner case ProtoMessageRefrence()) {
       inner = fn(inner);
@@ -363,10 +376,17 @@ class ProtoField with Equality {
   @override
   List<dynamic> get variables => [name, tag, type, options, comments, optional];
   Map<String, dynamic> toJson() {
-    return {"name": name, "tag": tag, "type": type.toJson(), "required": required};
+    return {
+      "name": name,
+      "tag": tag,
+      "type": type.toJson(),
+      "required": required,
+    };
   }
 
-  ProtoField resolveRefrences(ProtoMessageRefrence Function(ProtoMessageRefrence) fn) {
+  ProtoField resolveRefrences(
+    ProtoMessageRefrence Function(ProtoMessageRefrence) fn,
+  ) {
     return copyWith(type: type.resolveRefrences(fn));
   }
 
@@ -564,14 +584,22 @@ class ProtoMessage extends ProtoDeclaration {
   }
 
   ProtoMessage resolveRefrences(
-    ProtoMessageRefrence Function(ProtoMessageRefrence, ProtoDeclaration? parent) fn,
+    ProtoMessageRefrence Function(
+      ProtoMessageRefrence,
+      ProtoDeclaration? parent,
+    )
+    fn,
   ) {
     return copyWith(
       // Pass `this` (the message itself) as the enclosing context,
       // not `this.parent`. The resolver needs to know we are INSIDE
       // this message when resolving its fields.
-      fields: fields.map((e) => e.resolveRefrences((p0) => fn(p0, this))).toList(),
-      services: services.map((e) => e.resolveRefrences((p0) => fn(p0, this))).toList(),
+      fields: fields
+          .map((e) => e.resolveRefrences((p0) => fn(p0, this)))
+          .toList(),
+      services: services
+          .map((e) => e.resolveRefrences((p0) => fn(p0, this)))
+          .toList(),
     );
   }
 
@@ -579,7 +607,10 @@ class ProtoMessage extends ProtoDeclaration {
     return options.any((e) => e.name == key);
   }
 
-  List<ProtoOption> getAllOptions() => [...options, ...fields.expand((e) => e.options)];
+  List<ProtoOption> getAllOptions() => [
+    ...options,
+    ...fields.expand((e) => e.options),
+  ];
 }
 
 /// A proto2 `extend TargetType { ... }` block: declares additional fields
@@ -631,7 +662,9 @@ class ProtoService with Equality {
     required this.rpcs,
   });
 
-  ProtoService resolveRefrences(ProtoMessageRefrence Function(ProtoMessageRefrence) fn) {
+  ProtoService resolveRefrences(
+    ProtoMessageRefrence Function(ProtoMessageRefrence) fn,
+  ) {
     return copyWith(rpcs: rpcs.map((e) => e.resolveRefrences(fn)).toList());
   }
 
@@ -680,7 +713,9 @@ class ProtoRpc with Equality {
     required this.comments,
     required this.options,
   });
-  ProtoRpc resolveRefrences(ProtoMessageRefrence Function(ProtoMessageRefrence) fn) {
+  ProtoRpc resolveRefrences(
+    ProtoMessageRefrence Function(ProtoMessageRefrence) fn,
+  ) {
     return copyWith(
       request: request.resolveRefrences(fn),
       response: response.resolveRefrences(fn),
@@ -836,11 +871,17 @@ class ProtoFile with Equality {
   }
 
   ProtoFile resolveRefrences(
-    ProtoMessageRefrence Function(ProtoMessageRefrence, ProtoDeclaration? parent) fn,
+    ProtoMessageRefrence Function(
+      ProtoMessageRefrence,
+      ProtoDeclaration? parent,
+    )
+    fn,
   ) {
     return copyWith(
       messages: messages.map((e) => e.resolveRefrences(fn)).toList(),
-      services: services.map((e) => e.resolveRefrences((p0) => fn(p0, null))).toList(),
+      services: services
+          .map((e) => e.resolveRefrences((p0) => fn(p0, null)))
+          .toList(),
     );
   }
 }
