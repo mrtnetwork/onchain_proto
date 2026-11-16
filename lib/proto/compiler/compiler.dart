@@ -1,21 +1,22 @@
-import 'package:onchain_proto/src/compiler/file_builder.dart';
-import 'package:onchain_proto/src/compiler/code_gen.dart';
-import 'package:onchain_proto/src/exception/exception.dart';
-import 'package:onchain_proto/src/types/types.dart';
-import 'package:onchain_proto/src/utils/utils.dart';
+import 'package:blockchain_utils/blockchain_utils.dart';
+import 'package:onchain_proto/proto/compiler/file_builder.dart';
+import 'package:onchain_proto/proto/compiler/code_gen.dart';
+import 'package:onchain_proto/proto/exception/exception.dart';
+import 'package:onchain_proto/proto/types/types.dart';
+import 'package:onchain_proto/proto/utils/utils.dart';
 import 'type_resolver.dart';
 
 class ProtoCompiler extends TypeResolver {
   ProtoCompiler({
     required this.writer,
-    this.builder = const CosmosProtoCodegenTarget(),
+    this.builder = const DefaultProtoCodegenTarget(),
     this.classNamePrefix = '',
   });
 
   factory ProtoCompiler.fromDirectory({
     required String sourceDirectory,
     required ProtoPackageWriter writer,
-    ProtoCodegenTarget builder = const CosmosProtoCodegenTarget(),
+    ProtoCodegenTarget builder = const DefaultProtoCodegenTarget(),
     Map<String, ProtoPackageWriter> packageWriters = const {},
     String classNamePrefix = '',
   }) {
@@ -90,6 +91,14 @@ class ProtoCompiler extends TypeResolver {
         file.enums.any(enumHasRefrences);
   }
 
+  bool messageShouldSkip(ProtoMessage message) {
+    return writer.skipMessages.any(
+      (e) =>
+          e.package == message.package &&
+          e.fullTypeName == message.fullTypeName(),
+    );
+  }
+
   void compile({bool onlyRefrences = false}) {
     final packages = sourceFiles.map(
       (key, value) => MapEntry(key, value.map((e) => e.toFile()).toList()),
@@ -104,6 +113,15 @@ class ProtoCompiler extends TypeResolver {
       _refrences = closure?.references ?? [];
       _messages = closure?.declarations ?? [];
     }
+  }
+
+  ProtoDeclaration getMessageByFullTypeName(
+    String package,
+    String fullTypeName,
+  ) {
+    final p = generatedPackages[package]!;
+    final declarations = p.files.expand((e) => e.file.declarations()).toList();
+    return declarations.firstWhere((e) => e.fullTypeName() == fullTypeName);
   }
 
   void _indexPackages(List<ProtoFile> files) {
@@ -158,20 +176,27 @@ class ProtoCompiler extends TypeResolver {
   ProtoWritePackageResult? _writePackage(
     String packageName, {
     bool onlyRefrences = false,
+    bool writeToFile = true,
   }) {
     final output = generatedPackage(packageName);
 
     return writer.writePackage(
       package: output,
       builder: this,
+      writeToFile: writeToFile,
       onlyRefrences: onlyRefrences,
     );
   }
 
-  List<ProtoWritePackageResult> writeAll() {
+  List<ProtoWritePackageResult> writeAll({bool writeToFile = true}) {
+    builder.init(this);
     List<ProtoWritePackageResult> result = [];
     for (final package in generatedPackages.keys) {
-      final write = _writePackage(package, onlyRefrences: _onlyRefrences);
+      final write = _writePackage(
+        package,
+        onlyRefrences: _onlyRefrences,
+        writeToFile: writeToFile,
+      );
       if (write == null) continue;
       result.add(write);
     }
@@ -202,5 +227,12 @@ class ProtoCompiler extends TypeResolver {
     final source = tryGetsSourcFiles(fullPackagePath);
     final types = source?.expand((e) => e.parser.declarations).toList();
     return types ?? [];
+  }
+
+  SkipMessages? isSkipedMessage(ProtoMessageRefrence message) {
+    return writer.skipMessages.firstWhereNullable(
+      (e) =>
+          e.package == message.package && message.isRefrenceOf(e.fullTypeName),
+    );
   }
 }

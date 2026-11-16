@@ -1,5 +1,5 @@
-import 'package:onchain_proto/src/exception/exception.dart';
-import 'package:onchain_proto/src/types/types.dart';
+import 'package:onchain_proto/proto/exception/exception.dart';
+import 'package:onchain_proto/proto/types/types.dart';
 
 abstract class TypeResolver {
   /// detect if is package just accept full path

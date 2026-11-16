@@ -1,6 +1,5 @@
 import 'package:blockchain_utils/helper/extensions/extensions.dart';
-import 'package:onchain_proto/onchain_proto.dart';
-import 'package:onchain_proto/src/types/types.dart';
+import 'package:onchain_proto/proto/types/types.dart';
 
 extension ExtTypeLocation on ProtoTypeLocation {
   String importDirective() {

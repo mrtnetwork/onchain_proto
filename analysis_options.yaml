@@ -19,9 +19,12 @@ include: package:lints/recommended.yaml
 #   rules:
 #     - camel_case_types
 
-# analyzer:
-#   exclude:
-#     - path/to/excluded/files/**
+analyzer:
+  exclude:
+    # DID example output targets the On_chain ICP runtime
+    # (package:on_chain/icp/... via --types-import); it cannot analyze
+    # standalone inside this package, but proves the generator runs.
+    - example/generated/did/**
 
 # For more information about the core and recommended set of lints, see
 # https://dart.dev/go/core-lints

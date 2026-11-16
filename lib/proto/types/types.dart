@@ -1,7 +1,18 @@
 import 'package:blockchain_utils/blockchain_utils.dart';
-import 'package:onchain_proto/src/compiler/compiler.dart';
-import 'package:onchain_proto/src/parser/proto_parser.dart';
-import 'package:onchain_proto/src/utils/utils.dart';
+import 'package:onchain_proto/proto/compiler/compiler.dart';
+import 'package:onchain_proto/proto/parser/proto_parser.dart';
+import 'package:onchain_proto/proto/utils/utils.dart';
+
+class SkipMessages {
+  final String fullTypeName;
+  final String package;
+  final String importPath;
+  const SkipMessages({
+    required this.fullTypeName,
+    required this.importPath,
+    required this.package,
+  });
+}
 
 class ParsedProtobufMessage {
   final List<ParsedProtobufMessage> nestedMessages;
@@ -13,7 +24,7 @@ class ParsedProtobufMessage {
     required this.enums,
   });
   List<ProtoEnum> getEums() {
-    return [...enums, ...nestedMessages.expand((e) => e.enums)];
+    return [...enums, ...nestedMessages.expand((e) => e.getEums())];
   }
 
   List<ProtoMessage> getMessages() {
@@ -77,10 +88,12 @@ class GeneratedProtoPackage {
 
 class ProtoConvertFileResult {
   final String generatedData;
+  final bool write;
   final List<ProtoConvertMessageResult> classInfo;
   const ProtoConvertFileResult({
     required this.classInfo,
     required this.generatedData,
+    required this.write,
   });
 }
 
@@ -88,11 +101,13 @@ class ProtoConvertMessageResult {
   final String data;
   final String className;
   final ProtoMessage message;
+  final bool write;
 
   const ProtoConvertMessageResult({
     required this.data,
     required this.className,
     required this.message,
+    required this.write,
   });
 
   String get package => message.package;
@@ -155,6 +170,7 @@ sealed class ProtoType {
   ProtoType resolveRefrences(
     ProtoMessageRefrence Function(ProtoMessageRefrence) fn,
   );
+  bool isRefrenceOf(String fullTypeName) => false;
 }
 
 class ProtoScalar extends ProtoType with Equality {
@@ -211,6 +227,19 @@ class ProtoMessageRefrence extends ProtoType with Equality {
       resolved: false,
     );
   }
+  factory ProtoMessageRefrence.fromFullName(String package, String fullName) {
+    final split = fullName.split(".");
+    String? nestedName;
+    if (split.length > 1) {
+      nestedName = split.sublist(1, split.length - 1).join(".");
+    }
+    return ProtoMessageRefrence(
+      fullName: "$package.$fullName".split(".").join(),
+      typeName: split.last,
+      package: package,
+      nestedName: nestedName,
+    );
+  }
   @override
   Map<String, dynamic> toJson() {
     return {"typeName": typeName, "package": package, "nestedName": nestedName};
@@ -238,6 +267,9 @@ class ProtoMessageRefrence extends ProtoType with Equality {
     }
     return typeName;
   }
+
+  @override
+  bool isRefrenceOf(String fullTypeName) => fullTypeName == this.fullTypeName();
 
   @override
   ProtoMessageRefrence resolveRefrences(
@@ -415,6 +447,9 @@ sealed class ProtoDeclaration with Equality {
     return name;
   }
 
+  ProtoMessageRefrence toTypeRef() =>
+      ProtoMessageRefrence.fromFullName(package, fullName());
+
   String fullTypeName() {
     return fullName().split(".").join();
   }
@@ -488,7 +523,7 @@ class ProtoEnum extends ProtoDeclaration {
 
 class ProtoEnumValue with Equality {
   final String name;
-  final int value;
+  final int? value;
   final String comments;
   final List<ProtoOption> options;
 
@@ -868,6 +903,10 @@ class ProtoFile with Equality {
       ...messages.map((e) => e.fullTypeName()),
       ...enums.map((e) => e.fullTypeName()),
     ];
+  }
+
+  List<ProtoDeclaration> declarations() {
+    return [...messages, ...enums];
   }
 
   ProtoFile resolveRefrences(

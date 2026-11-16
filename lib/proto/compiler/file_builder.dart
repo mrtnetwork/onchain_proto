@@ -1,18 +1,20 @@
 import 'dart:io';
 
 import 'package:blockchain_utils/blockchain_utils.dart';
-import 'package:onchain_proto/src/compiler/compiler.dart';
-import 'package:onchain_proto/src/compiler/dart_converter.dart';
-import 'package:onchain_proto/src/types/types.dart';
+import 'package:onchain_proto/proto/compiler/compiler.dart';
+import 'package:onchain_proto/proto/compiler/dart_converter.dart';
+import 'package:onchain_proto/proto/types/types.dart';
 
 class ProtoPackageWriter {
   final String outputRoot;
   final String packageRoot;
   final List<ProtoWriteSkipFile> skipFiles;
   final Map<String, ProtoPackagePathOverride> _overridePaths;
+  final List<SkipMessages> skipMessages;
   factory ProtoPackageWriter({
     required String outputRoot,
     required String packageRoot,
+    List<SkipMessages> skipMessages = const [],
     List<ProtoWriteSkipFile> skipFiles = const [],
     List<ProtoPackagePathOverride> overrides = const [],
   }) {
@@ -27,6 +29,7 @@ class ProtoPackageWriter {
       packageRoot: packageRoot,
       overridePaths: overridePaths,
       skipFiles: skipFiles,
+      skipMessages: skipMessages,
     );
   }
   ProtoPackageWriter._({
@@ -34,6 +37,7 @@ class ProtoPackageWriter {
     required this.packageRoot,
     this.skipFiles = const [],
     this._overridePaths = const {},
+    this.skipMessages = const [],
   });
 
   ProtoWriteSkipFile? _getSkipFile(ProtoFile file) {
@@ -118,6 +122,7 @@ class ProtoPackageWriter {
   ProtoWriteFileResult? writeMessageFile({
     required GeneratedProtoFile file,
     required ProtoCompiler builder,
+    bool writeToFile = true,
     bool onlyRefrences = false,
   }) {
     final result = file.file.toDartProtoMessages(
@@ -135,12 +140,16 @@ class ProtoPackageWriter {
             : null,
       );
     }
-    final output = File(file.outputPath)..createSync(recursive: true);
-    output.writeAsStringSync(result.generatedData);
+    final output = File(file.outputPath);
+    if (writeToFile && result.write) {
+      output.createSync(recursive: true);
+      output.writeAsStringSync(result.generatedData);
+    }
+
     return ProtoWriteFileResult(
       fileData: result,
       importPath: file.importPath,
-      srcPath: 'src/${output.uri.pathSegments.last}',
+      srcPath: result.write ? 'src/${output.uri.pathSegments.last}' : null,
     );
   }
 
@@ -148,6 +157,7 @@ class ProtoPackageWriter {
     required GeneratedProtoPackage package,
     required ProtoCompiler builder,
     bool onlyRefrences = false,
+    bool writeToFile = true,
   }) {
     if (package.files.isEmpty) {
       return null;
@@ -160,21 +170,23 @@ class ProtoPackageWriter {
             file: file,
             builder: builder,
             onlyRefrences: onlyRefrences,
+            writeToFile: writeToFile,
           ),
         )
         .whereType<ProtoWriteFileResult>()
         .toList();
     if (exports.isEmpty) return null;
+    if (writeToFile) {
+      final library = File(packageLibraryPath(package.package))
+        ..createSync(recursive: true);
 
-    final library = File(packageLibraryPath(package.package))
-      ..createSync(recursive: true);
-
-    library.writeAsStringSync(
-      exports
-          .where((e) => e.srcPath != null)
-          .map((e) => "export '${e.srcPath}';")
-          .join('\n'),
-    );
+      library.writeAsStringSync(
+        exports
+            .where((e) => e.srcPath != null)
+            .map((e) => "export '${e.srcPath}';")
+            .join('\n'),
+      );
+    }
     return ProtoWritePackageResult(
       files: exports,
       package: package.package,

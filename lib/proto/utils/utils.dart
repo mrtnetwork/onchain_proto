@@ -1,11 +1,9 @@
 import 'dart:io';
-
-import 'package:blockchain_utils/proto/types/types.dart';
-import 'package:blockchain_utils/utils/string/string.dart';
-import 'package:onchain_proto/src/compiler/compiler.dart';
-import 'package:onchain_proto/src/exception/exception.dart';
-import 'package:onchain_proto/src/parser/proto_parser.dart';
-import 'package:onchain_proto/src/types/types.dart';
+import 'package:blockchain_utils/blockchain_utils.dart';
+import 'package:onchain_proto/proto/compiler/compiler.dart';
+import 'package:onchain_proto/proto/exception/exception.dart';
+import 'package:onchain_proto/proto/parser/proto_parser.dart';
+import 'package:onchain_proto/proto/types/types.dart';
 
 class OnChainProtoUtils {
   static ProtoSourceFile readProtoFile({
@@ -69,7 +67,16 @@ class OnChainProtoUtils {
         "Type not find $message $typeName /  ${files.files.expand((e) => e.file.typesName().toList()).toList()}",
       ),
     );
+    final skip = resolver.isSkipedMessage(message);
+    if (skip != null) {
+      return ProtoTypeLocation(
+        name: typeName,
+        importPath: skip.importPath,
+        packageName: external ?? f.package,
+      );
+    }
     if (identical(file.file, f)) return null;
+
     return ProtoTypeLocation(
       name: typeName,
       importPath: file.importPath,

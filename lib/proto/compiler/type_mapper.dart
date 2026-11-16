@@ -1,9 +1,9 @@
 import 'package:blockchain_utils/blockchain_utils.dart';
-import 'package:onchain_proto/src/compiler/compiler.dart';
-import 'package:onchain_proto/src/compiler/dart_converter.dart';
-import 'package:onchain_proto/src/exception/exception.dart';
-import 'package:onchain_proto/src/types/types.dart';
-import 'package:onchain_proto/src/utils/utils.dart';
+import 'package:onchain_proto/proto/compiler/compiler.dart';
+import 'package:onchain_proto/proto/compiler/dart_converter.dart';
+import 'package:onchain_proto/proto/exception/exception.dart';
+import 'package:onchain_proto/proto/types/types.dart';
+import 'package:onchain_proto/proto/utils/utils.dart';
 
 import 'type_location.dart';
 
@@ -15,13 +15,17 @@ abstract final class ProtoRuntimeTypeMapper {
     required bool required,
     required ProtoCompiler resolver,
     required Set<ProtoTypeLocation> importRefrences,
+    bool forceNullable = false,
+    bool withClassPrefix = true,
   }) {
     final base = bareDartType(
       type: type,
       resolver: resolver,
       importRefrences: importRefrences,
+      withClassPrefix: withClassPrefix,
     );
-    if (isNullable(type: type, optional: optional, required: required) &&
+    if ((forceNullable ||
+            isNullable(type: type, optional: optional, required: required)) &&
         !base.endsWith('?')) {
       return '$base?';
     }
@@ -32,6 +36,7 @@ abstract final class ProtoRuntimeTypeMapper {
     required ProtoType type,
     required ProtoCompiler resolver,
     required Set<ProtoTypeLocation> importRefrences,
+    bool withClassPrefix = true,
   }) {
     switch (type) {
       case ProtoScalar(type: final st):
@@ -40,14 +45,14 @@ abstract final class ProtoRuntimeTypeMapper {
         return importRefrences.qualifyType(
           OnChainProtoUtils.className(
             fullTypeName(),
-            prefix: resolver.classNamePrefix,
+            prefix: withClassPrefix ? resolver.classNamePrefix : '',
           ),
           type,
         );
       case ProtoRepeated(inner: final inner):
-        return 'List<${bareDartType(type: inner, importRefrences: importRefrences, resolver: resolver)}>';
+        return 'List<${bareDartType(type: inner, importRefrences: importRefrences, resolver: resolver, withClassPrefix: withClassPrefix)}>';
       case ProtoMap(key: final k, value: final v):
-        return 'Map<${bareDartType(type: k, resolver: resolver, importRefrences: importRefrences)}, ${bareDartType(type: v, importRefrences: importRefrences, resolver: resolver)}>';
+        return 'Map<${bareDartType(type: k, resolver: resolver, importRefrences: importRefrences, withClassPrefix: withClassPrefix)}, ${bareDartType(type: v, importRefrences: importRefrences, resolver: resolver, withClassPrefix: withClassPrefix)}>';
     }
   }
 
@@ -71,8 +76,9 @@ abstract final class ProtoRuntimeTypeMapper {
     required bool required,
     required ProtoCompiler resolver,
   }) {
-    if (isNullable(type: type, optional: optional, required: required))
+    if (isNullable(type: type, optional: optional, required: required)) {
       return null;
+    }
     switch (type) {
       case ProtoRepeated():
         return 'const []';
@@ -107,7 +113,83 @@ abstract final class ProtoRuntimeTypeMapper {
       case ProtoScalarType.string_:
         return 'String';
       case ProtoScalarType.bytes:
-        return 'List<int>';
+        return 'BuBytes';
+    }
+  }
+
+  /// True when [type] contains a proto `bytes` scalar (singular, repeated
+  /// element, or map key/value). Generated fields use `BuBytes` for these
+  /// while constructor parameters stay `List<int>` (see `ctorParamType`).
+  static bool isBytesType(ProtoType type) {
+    switch (type) {
+      case ProtoScalar(type: final st):
+        return st == ProtoScalarType.bytes;
+      case ProtoRepeated(inner: final inner):
+        return isBytesType(inner);
+      case ProtoMap(key: final k, value: final v):
+        return isBytesType(k) || isBytesType(v);
+      case ProtoMessageRefrence():
+        return false;
+    }
+  }
+
+  /// Constructor parameter type for a field: identical to [dartFieldType]
+  /// except proto `bytes` map to `List<int>` instead of `BuBytes`, so call
+  /// sites keep passing plain byte lists while the stored field is `BuBytes`.
+  static String ctorParamType({
+    required ProtoType type,
+    required bool optional,
+    required bool required,
+    required ProtoCompiler resolver,
+    required Set<ProtoTypeLocation> importRefrences,
+    bool forceNullable = false,
+    bool withClassPrefix = true,
+  }) {
+    final fieldType = dartFieldType(
+      type: type,
+      optional: optional,
+      required: required,
+      resolver: resolver,
+      importRefrences: importRefrences,
+      forceNullable: forceNullable,
+      withClassPrefix: withClassPrefix,
+    );
+    if (!isBytesType(type)) return fieldType;
+    // `BuBytes` only ever arises from a bytes scalar, so a textual swap of
+    // the scalar is exact for `BuBytes`, `BuBytes?`, `List<BuBytes>`,
+    // `Map<K, BuBytes>`, etc.
+    return fieldType.replaceAll('BuBytes', 'List<int>');
+  }
+
+  /// Initializer-list RHS converting a `List<int>`-shaped ctor parameter
+  /// named [paramName] into the `BuBytes`-shaped field value.
+  static String bytesInitExpr(ProtoType type, String paramName) {
+    switch (type) {
+      case ProtoScalar(type: final st):
+        if (st == ProtoScalarType.bytes) {
+          return '$paramName.asImmutableBytes';
+        }
+        return paramName;
+      case ProtoRepeated(inner: final inner):
+        if (isBytesType(inner)) {
+          return '$paramName.map((e) => e.asImmutableBytes).toImutableList';
+        }
+        return '$paramName.immutable';
+      case ProtoMap(key: final k, value: final v):
+        final mapKey = isBytesType(k);
+        final mapValue = isBytesType(v);
+        if (mapKey && mapValue) {
+          return '$paramName.map((k, v) => MapEntry(k.asImmutableBytes, v.asImmutableBytes)).immutable';
+        }
+        if (mapValue) {
+          return '$paramName.map((k, v) => MapEntry(k, v.asImmutableBytes)).immutable';
+        }
+        if (mapKey) {
+          return '$paramName.map((k, v) => MapEntry(k.asImmutableBytes, v)).immutable';
+        }
+        return '$paramName.immutable';
+      case ProtoMessageRefrence():
+        return paramName;
     }
   }
 
@@ -270,11 +352,13 @@ abstract final class ProtoRuntimeTypeMapper {
     required bool optional,
     required ProtoCompiler resolver,
     required bool required,
-    required StringEncoding? bytesEncoding,
     required List<ProtoOption> options,
     String? toJsonParams,
     bool isElement = false,
   }) {
+    if (!isElement && accessor == "config") {
+      accessor = "this.$accessor";
+    }
     // Repeated/map elements are never individually null in proto3 - only
     // the top-level field's own optionality/bare-message-ref rule applies.
     final nullable = isElement
@@ -286,17 +370,17 @@ abstract final class ProtoRuntimeTypeMapper {
           st: st,
           accessor: accessor,
           nullable: nullable,
-          bytesEncoding: bytesEncoding,
         );
       case ProtoMessageRefrence(
         :final isGoogleTimestamp,
         :final isGoogleDuration,
       ):
         if (resolver.isEnum(type)) {
-          // Canonical protobuf JSON encodes enums as their original proto
-          // identifier string, not the wire int - matches the `from()`
-          // lookup added to the generated enum.
-          return nullable ? '$accessor?.protoName' : '$accessor.protoName';
+          return "config.encodeEnum($accessor)";
+          // // Canonical protobuf JSON encodes enums as their original proto
+          // // identifier string, not the wire int - matches the `from()`
+          // // lookup added to the generated enum.
+          // return nullable ? '$accessor?.protoName' : '$accessor.protoName';
         }
         bool isGoogle = isGoogleTimestamp();
         bool isDuration = isGoogleDuration();
@@ -314,13 +398,13 @@ abstract final class ProtoRuntimeTypeMapper {
               ? '$accessor?.toJson($toJsonParams)'
               : '$accessor.toJson($toJsonParams)';
         }
-        return nullable ? '$accessor?.toJson()' : '$accessor.toJson()';
+        return 'config.encodeMessage($accessor)';
+      // return nullable ? '$accessor?.toJson()' : '$accessor.toJson()';
       case ProtoRepeated(inner: final inner):
         final innerExpr = toJsonValueExpr(
           type: inner,
           accessor: 'e',
           resolver: resolver,
-          bytesEncoding: bytesEncoding,
           required: true,
           toJsonParams: toJsonParams,
           options: options,
@@ -334,13 +418,22 @@ abstract final class ProtoRuntimeTypeMapper {
             "toJson only support for premitive and message types.",
           );
         }
+        final keyEpr = toJsonValueExpr(
+          type: key,
+          accessor: 'k',
+          resolver: resolver,
+          options: options,
+          isElement: true,
+          required: true,
+          optional: false,
+          toJsonParams: toJsonParams,
+        );
         final valueExpr = toJsonValueExpr(
           type: v,
           accessor: 'v',
           resolver: resolver,
           options: options,
           isElement: true,
-          bytesEncoding: bytesEncoding,
           required: true,
           optional: false,
           toJsonParams: toJsonParams,
@@ -348,7 +441,7 @@ abstract final class ProtoRuntimeTypeMapper {
         if (valueExpr == 'v') {
           return accessor;
         }
-        return '$accessor.map((k, v) => MapEntry(k, $valueExpr))';
+        return "config.encodeMap($accessor,(k, v) => MapEntry($keyEpr, $valueExpr))";
     }
   }
 
@@ -356,7 +449,6 @@ abstract final class ProtoRuntimeTypeMapper {
     required ProtoScalarType st,
     required String accessor,
     required bool nullable,
-    required StringEncoding? bytesEncoding,
   }) {
     switch (st) {
       case ProtoScalarType.int64:
@@ -364,16 +456,9 @@ abstract final class ProtoRuntimeTypeMapper {
       case ProtoScalarType.sint64:
       case ProtoScalarType.fixed64:
       case ProtoScalarType.sfixed64:
-        if (nullable) {
-          return '$accessor?.toString()';
-        }
-        return '$accessor.toString()';
+        return 'config.encodeBigint($accessor)';
       case ProtoScalarType.bytes:
-        if (bytesEncoding == null) return accessor;
-        if (nullable) {
-          return 'switch ($accessor) {List<int> bytes =>StringUtils.decode(bytes, encoding: StringEncoding.${bytesEncoding.name}),_=>null}';
-        }
-        return 'StringUtils.decode($accessor, encoding: StringEncoding.${bytesEncoding.name})';
+        return 'config.encodeBinary($accessor)';
       default:
         return accessor;
     }
@@ -384,8 +469,6 @@ abstract final class ProtoRuntimeTypeMapper {
     required Set<ProtoTypeLocation> importRefrences,
     required ProtoCompiler resolver,
     required bool camelCase,
-    required StringEncoding? bytesEncoding,
-    required bool acceptCamelCase,
     required bool defaultOnMissing,
   }) {
     final key = f.name;
@@ -402,8 +485,6 @@ abstract final class ProtoRuntimeTypeMapper {
       isTopLevelKey: true,
       importRefrences: importRefrences,
       camelCase: camelCase,
-      bytesEncoding: bytesEncoding,
-      acceptCamelCase: acceptCamelCase,
       defaultOnMissing: defaultOnMissing,
     );
   }
@@ -416,8 +497,6 @@ abstract final class ProtoRuntimeTypeMapper {
     required bool isTopLevelKey,
     required Set<ProtoTypeLocation> importRefrences,
     required bool camelCase,
-    required StringEncoding? bytesEncoding,
-    required bool acceptCamelCase,
     required bool defaultOnMissing,
   }) {
     if (camelCase && isTopLevelKey) {
@@ -433,17 +512,11 @@ abstract final class ProtoRuntimeTypeMapper {
                 st,
                 keyOrAccessor,
                 optional: optional,
-                bytesEncoding: bytesEncoding,
-                acceptCamelCase: acceptCamelCase,
                 defaultOnMissing: defaultOnMissing,
               )
             : _scalarFromJsonRaw(st, keyOrAccessor);
 
-      case ProtoMessageRefrence(
-        :final fullTypeName,
-        :final isGoogleTimestamp,
-        :final isGoogleDuration,
-      ):
+      case ProtoMessageRefrence(:final fullTypeName):
         String className = OnChainProtoUtils.className(
           fullTypeName(),
           prefix: resolver.classNamePrefix,
@@ -467,37 +540,39 @@ abstract final class ProtoRuntimeTypeMapper {
               '          parse: (v) => $className.from(v),\n'
               '        )';
         }
-        final bool googleTimestamp = isGoogleTimestamp();
-        final bool isDuration = isGoogleDuration();
-        String jsonFormat = switch (googleTimestamp || isDuration) {
-          false => "Map<String, dynamic>",
-          true => "String",
-        };
-        final constructor = switch (googleTimestamp || isDuration) {
-          false => "fromJson(v)",
-          true => switch (isDuration) {
-            false => "fromRfc3339(v)",
-            true => "fromString(v)",
-          },
-        };
+        // final bool googleTimestamp = isGoogleTimestamp();
+        // final bool isDuration = isGoogleDuration();
+        // String jsonFormat = switch (googleTimestamp || isDuration) {
+        //   false => "Map<String, dynamic>",
+        //   true => "String",
+        // };
+
+        final constructor = 'fromJson(JsonParser.valueAs(v), config: config)';
+        //  switch (googleTimestamp || isDuration) {
+        //   false => "fromJson(v, config: config)",
+        //   true => switch (isDuration) {
+        //     false => "fromRfc3339(v)",
+        //     true => "fromString(v)",
+        //   },
+        // };
         // message: nested object, parsed via the nested class's fromJson.
         if (isTopLevelKey) {
-          final typeArgs = '$className${optional ? '?' : ''}, $jsonFormat';
+          final typeArgs = '$className${optional ? '?' : ''}, Object';
           final onError = '';
           return "json.valueTo<$typeArgs>(\n"
               "        key: '$keyOrAccessor',$onError\n"
               '        parse: (v) => $className.$constructor,\n'
-              '${acceptCamelCase ? "acceptCamelCase: true,\n" : ""}        '
+              '        normalizeKeyLookup: config.normalizeKeys'
               '      )';
         }
-        return 'JsonParser.valueTo<$className, $jsonFormat>(\n'
+        return 'JsonParser.valueTo<$className, Object>(\n'
             '          value: $keyOrAccessor,\n'
             '          parse: (v) => $className.$constructor,\n'
             '        )';
 
       case ProtoRepeated(inner: final inner):
         final rawList = isTopLevelKey
-            ? "json.valueEnsureAsList<dynamic>('$keyOrAccessor'${acceptCamelCase ? ", acceptCamelCase: true" : ""})"
+            ? "json.valueEnsureAsList<dynamic>('$keyOrAccessor', normalizeKeyLookup: config.normalizeKeys ${defaultOnMissing ? ", onMissing: ()=>[]" : ""})"
             : keyOrAccessor;
         final elementExpr = _fromJsonForType(
           type: inner,
@@ -506,16 +581,11 @@ abstract final class ProtoRuntimeTypeMapper {
           isTopLevelKey: false,
           importRefrences: importRefrences,
           camelCase: camelCase,
-          bytesEncoding: bytesEncoding,
-          acceptCamelCase: acceptCamelCase,
           defaultOnMissing: defaultOnMissing,
         );
         return '($rawList).map((e) => $elementExpr).toList()';
 
       case ProtoMap(key: final k, value: final v):
-        final rawMap = isTopLevelKey
-            ? "json.valueAsMap<Map<dynamic, dynamic>>('$keyOrAccessor'${acceptCamelCase ? ", acceptCamelCase: true" : ""})"
-            : keyOrAccessor;
         final keyExpr = _fromJsonForType(
           type: k,
           keyOrAccessor: 'k',
@@ -523,8 +593,6 @@ abstract final class ProtoRuntimeTypeMapper {
           isTopLevelKey: false,
           camelCase: camelCase,
           importRefrences: importRefrences,
-          bytesEncoding: bytesEncoding,
-          acceptCamelCase: acceptCamelCase,
           defaultOnMissing: defaultOnMissing,
         );
         final valueExpr = _fromJsonForType(
@@ -534,11 +602,12 @@ abstract final class ProtoRuntimeTypeMapper {
           isTopLevelKey: false,
           camelCase: camelCase,
           importRefrences: importRefrences,
-          bytesEncoding: bytesEncoding,
-          acceptCamelCase: acceptCamelCase,
           defaultOnMissing: defaultOnMissing,
         );
-        return '($rawMap).map((k, v) => MapEntry($keyExpr, $valueExpr))';
+        if (isTopLevelKey) {
+          return "config.decodeMap(json.valueAs('$keyOrAccessor', normalizeKeyLookup: config.normalizeKeys),(k, v) => MapEntry($keyExpr, $valueExpr))";
+        }
+        return '($keyOrAccessor).map((k, v) => MapEntry($keyExpr, $valueExpr))';
     }
   }
 
@@ -546,14 +615,10 @@ abstract final class ProtoRuntimeTypeMapper {
     ProtoScalarType st,
     String key, {
     required bool optional,
-    required StringEncoding? bytesEncoding,
-    required bool acceptCamelCase,
     required bool defaultOnMissing,
   }) {
     final q = "'$key'";
-    final acceptCammelCaseParams = acceptCamelCase
-        ? ", acceptCamelCase: true"
-        : "";
+    final acceptCammelCaseParams = ", normalizeKeyLookup: config.normalizeKeys";
     final bool allowMissingParam = (!optional && defaultOnMissing);
     switch (st) {
       case ProtoScalarType.double_:
@@ -583,11 +648,7 @@ abstract final class ProtoRuntimeTypeMapper {
         String onMissing = allowMissingParam ? ', onMissing:() => ""' : "";
         return "json.valueAsString<String${optional ? '?' : ''}>($q$acceptCammelCaseParams$onMissing)";
       case ProtoScalarType.bytes:
-        String onMissing = allowMissingParam ? ", onMissing:() => []" : "";
-        String encodingParams = bytesEncoding != null
-            ? ",encoding: StringEncoding.${bytesEncoding.name}"
-            : '';
-        return "json.valueAsBytes<List<int>${optional ? '?' : ''}>($q$acceptCammelCaseParams$encodingParams$onMissing)";
+        return "config.decodeBinary<List<int>${optional ? '?' : ''}>(json.valueAs($q$acceptCammelCaseParams))";
     }
   }
 
@@ -613,7 +674,8 @@ abstract final class ProtoRuntimeTypeMapper {
       case ProtoScalarType.string_:
         return 'JsonParser.valueAsString<String>($accessor)';
       case ProtoScalarType.bytes:
-        return 'JsonParser.valueAsBytes<List<int>>($accessor,encoding:StringEncoding.base64)';
+        return 'config.decodeBinary<List<int>>($accessor)';
+      // return 'JsonParser.valueAsBytes<List<int>>($accessor, encoding: config.binaryEncoding)';
     }
   }
 

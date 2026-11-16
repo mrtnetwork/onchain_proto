@@ -1,7 +1,7 @@
 import 'package:blockchain_utils/blockchain_utils.dart';
-import 'package:onchain_proto/src/compiler/compiler.dart';
-import 'package:onchain_proto/src/exception/exception.dart';
-import 'package:onchain_proto/src/types/types.dart';
+import 'package:onchain_proto/proto/compiler/compiler.dart';
+import 'package:onchain_proto/proto/exception/exception.dart';
+import 'package:onchain_proto/proto/types/types.dart';
 import 'tokenize.dart';
 
 class ProtoParseException extends OnChainProtoException {
@@ -244,7 +244,6 @@ class _ProtoFileParser {
           final parse = _parseMessage();
           messages.addAll(parse.getMessages());
           enums.addAll(parse.getEums());
-          // messages.addAll(_parseMessage2());
           break;
         case 'service':
           services.add(_parseService());
@@ -265,7 +264,8 @@ class _ProtoFileParser {
     if (syntax == null) {
       throw ProtoParseException("Unknown file syntax..", _cur.line);
     }
-    // messages = _resolveNestedMessages(messages: messages, enums: enums);
+
+    // print("enims ${messages.map((e) => e.fullTypeName()).toList()}");
 
     return ProtoFile(
       syntax: syntax,
@@ -577,15 +577,27 @@ class _ProtoFileParser {
     ProtoMessage parent,
   ) {
     final message = parsed.message.copyWith(parent: parent);
-
+    final enums = parsed.enums.map((e) => e.copyWith(parent: message)).toList();
     return ParsedProtobufMessage(
       message: message,
-      enums: parsed.enums.map((e) => e.copyWith(parent: message)).toList(),
+      enums: enums,
       nestedMessages: parsed.nestedMessages
           .map((e) => _withParent(e, message))
           .toList(),
     );
   }
+
+  // ProtoEnum _enumWithParent(ProtoEnum parsed, ProtoMessage parent) {
+  //   final message = parsed.copyWith(parent: parent);
+
+  //   return ParsedProtobufMessage(
+  //     message: message,
+  //     enums: parsed.enums.map((e) => e.copyWith(parent: message)).toList(),
+  //     nestedMessages: parsed.nestedMessages
+  //         .map((e) => _withParent(e, message))
+  //         .toList(),
+  //   );
+  // }
 
   ParsedProtobufMessage _parseMessage() {
     final comments = _takeComments();
@@ -648,6 +660,7 @@ class _ProtoFileParser {
       options: options,
       fields: fields,
       package: packageName,
+
       services: [],
     );
     return ParsedProtobufMessage(
