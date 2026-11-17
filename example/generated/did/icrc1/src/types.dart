@@ -13,7 +13,6 @@ typedef ICRC1Duration = BigInt;
 /// Candid type alias `Subaccount`.
 typedef ICRC1Subaccount = List<int>;
 
-
 /// Candid record `ICRC1Icrc1Metadata.response`.
 final class ICRC1Icrc1MetadataResponse with CandidSerializable {
   final String field0;
@@ -33,15 +32,9 @@ final class ICRC1Icrc1MetadataResponse with CandidSerializable {
   CType get candidType => ctype;
 
   @override
-  dynamic get candidValue => {
-    '0': field0,
-    '1': field1.candidValue,
-  };
+  dynamic get candidValue => {'0': field0, '1': field1.candidValue};
 
-  Map<String, dynamic> toJson() => {
-    '0': field0,
-    '1': field1.toJson(),
-  };
+  Map<String, dynamic> toJson() => {'0': field0, '1': field1.toJson()};
 
   factory ICRC1Icrc1MetadataResponse.fromCandid(Map<String, dynamic> json) {
     return ICRC1Icrc1MetadataResponse(
@@ -57,10 +50,11 @@ final class ICRC1Icrc1MetadataResponse with CandidSerializable {
 
   factory ICRC1Icrc1MetadataResponse.fromBytes(List<int> bytes) {
     final raw = CandidUtils.decodeOneTyped(bytes, ctype);
-    return ICRC1Icrc1MetadataResponse.fromCandid(JsonParser.valueEnsureAsMap<String, dynamic>(raw));
+    return ICRC1Icrc1MetadataResponse.fromCandid(
+      JsonParser.valueEnsureAsMap<String, dynamic>(raw),
+    );
   }
 }
-
 
 /// Candid variant `ICRC1Icrc1Transfer.response`.
 sealed class ICRC1Icrc1TransferResponse with CandidSerializable {
@@ -81,12 +75,14 @@ sealed class ICRC1Icrc1TransferResponse with CandidSerializable {
       return ICRC1Icrc1TransferResponseOk(json.valueAsBigInt<BigInt>('Ok'));
     }
     if (json.containsKey('Err')) {
-      return ICRC1Icrc1TransferResponseErr(json.valueTo<ICRC1TransferError, Map>(
-        key: 'Err',
-        parse: (e) => ICRC1TransferError.fromCandid(
-          JsonParser.valueEnsureAsMap<String, dynamic>(e),
+      return ICRC1Icrc1TransferResponseErr(
+        json.valueTo<ICRC1TransferError, Map>(
+          key: 'Err',
+          parse: (e) => ICRC1TransferError.fromCandid(
+            JsonParser.valueEnsureAsMap<String, dynamic>(e),
+          ),
         ),
-      ));
+      );
     }
     throw ArgumentException.invalidOperationArguments(
       'ICRC1Icrc1TransferResponse.fromCandid',
@@ -96,7 +92,9 @@ sealed class ICRC1Icrc1TransferResponse with CandidSerializable {
 
   factory ICRC1Icrc1TransferResponse.fromBytes(List<int> bytes) {
     final raw = CandidUtils.decodeOneTyped(bytes, ctype);
-    return ICRC1Icrc1TransferResponse.fromCandid(JsonParser.valueEnsureAsMap<String, dynamic>(raw));
+    return ICRC1Icrc1TransferResponse.fromCandid(
+      JsonParser.valueEnsureAsMap<String, dynamic>(raw),
+    );
   }
 }
 
@@ -130,8 +128,6 @@ final class ICRC1Icrc1TransferResponseErr extends ICRC1Icrc1TransferResponse {
   Map<String, dynamic> toJson() => {'Err': value.toJson()};
 }
 
-
-
 /// Candid record `ICRC1Icrc1SupportedStandards.response`.
 final class ICRC1Icrc1SupportedStandardsResponse with CandidSerializable {
   final String name;
@@ -151,17 +147,13 @@ final class ICRC1Icrc1SupportedStandardsResponse with CandidSerializable {
   CType get candidType => ctype;
 
   @override
-  dynamic get candidValue => {
-    'name': name,
-    'url': url,
-  };
+  dynamic get candidValue => {'name': name, 'url': url};
 
-  Map<String, dynamic> toJson() => {
-    'name': name,
-    'url': url,
-  };
+  Map<String, dynamic> toJson() => {'name': name, 'url': url};
 
-  factory ICRC1Icrc1SupportedStandardsResponse.fromCandid(Map<String, dynamic> json) {
+  factory ICRC1Icrc1SupportedStandardsResponse.fromCandid(
+    Map<String, dynamic> json,
+  ) {
     return ICRC1Icrc1SupportedStandardsResponse(
       name: json.valueAsString<String>('name'),
       url: json.valueAsString<String>('url'),
@@ -170,20 +162,18 @@ final class ICRC1Icrc1SupportedStandardsResponse with CandidSerializable {
 
   factory ICRC1Icrc1SupportedStandardsResponse.fromBytes(List<int> bytes) {
     final raw = CandidUtils.decodeOneTyped(bytes, ctype);
-    return ICRC1Icrc1SupportedStandardsResponse.fromCandid(JsonParser.valueEnsureAsMap<String, dynamic>(raw));
+    return ICRC1Icrc1SupportedStandardsResponse.fromCandid(
+      JsonParser.valueEnsureAsMap<String, dynamic>(raw),
+    );
   }
 }
-
 
 /// Candid record `Account`.
 final class ICRC1Account with CandidSerializable {
   final IcpPrincipalAddress owner;
   final ICRC1Subaccount? subaccount;
 
-  const ICRC1Account({
-    required this.owner,
-    this.subaccount,
-  });
+  const ICRC1Account({required this.owner, this.subaccount});
 
   static CType get ctype => CType.record([
     Field(Label.named('owner'), CType.principal),
@@ -194,10 +184,7 @@ final class ICRC1Account with CandidSerializable {
   CType get candidType => ctype;
 
   @override
-  dynamic get candidValue => {
-    'owner': owner,
-    'subaccount': subaccount,
-  };
+  dynamic get candidValue => {'owner': owner, 'subaccount': subaccount};
 
   Map<String, dynamic> toJson() => {
     'owner': owner.address,
@@ -210,16 +197,20 @@ final class ICRC1Account with CandidSerializable {
         key: 'owner',
         parse: (e) => GeneratorParserUtils.principalFromCandid(e),
       ),
-      subaccount: json.valueAsBytes<List<int>?>('subaccount', encoding: StringEncoding.base64),
+      subaccount: json.valueAsBytes<List<int>?>(
+        'subaccount',
+        encoding: StringEncoding.base64,
+      ),
     );
   }
 
   factory ICRC1Account.fromBytes(List<int> bytes) {
     final raw = CandidUtils.decodeOneTyped(bytes, ctype);
-    return ICRC1Account.fromCandid(JsonParser.valueEnsureAsMap<String, dynamic>(raw));
+    return ICRC1Account.fromCandid(
+      JsonParser.valueEnsureAsMap<String, dynamic>(raw),
+    );
   }
 }
-
 
 /// Candid record `TransferArgs`.
 final class ICRC1TransferArgs with CandidSerializable {
@@ -272,7 +263,10 @@ final class ICRC1TransferArgs with CandidSerializable {
 
   factory ICRC1TransferArgs.fromCandid(Map<String, dynamic> json) {
     return ICRC1TransferArgs(
-      fromSubaccount: json.valueAsBytes<List<int>?>('from_subaccount', encoding: StringEncoding.base64),
+      fromSubaccount: json.valueAsBytes<List<int>?>(
+        'from_subaccount',
+        encoding: StringEncoding.base64,
+      ),
       to: json.valueTo<ICRC1Account, Map>(
         key: 'to',
         parse: (e) => ICRC1Account.fromCandid(
@@ -281,44 +275,56 @@ final class ICRC1TransferArgs with CandidSerializable {
       ),
       amount: json.valueAsBigInt<BigInt>('amount'),
       fee: json.valueAsBigInt<BigInt?>('fee'),
-      memo: json.valueAsBytes<List<int>?>('memo', encoding: StringEncoding.base64),
+      memo: json.valueAsBytes<List<int>?>(
+        'memo',
+        encoding: StringEncoding.base64,
+      ),
       createdAtTime: json.valueAsBigInt<BigInt?>('created_at_time'),
     );
   }
 
   factory ICRC1TransferArgs.fromBytes(List<int> bytes) {
     final raw = CandidUtils.decodeOneTyped(bytes, ctype);
-    return ICRC1TransferArgs.fromCandid(JsonParser.valueEnsureAsMap<String, dynamic>(raw));
+    return ICRC1TransferArgs.fromCandid(
+      JsonParser.valueEnsureAsMap<String, dynamic>(raw),
+    );
   }
 }
-
 
 /// Candid variant `TransferError`.
 sealed class ICRC1TransferError with CandidSerializable {
   const ICRC1TransferError();
 
   static CType get ctype => CType.variant([
-    Field(Label.named('BadFee'), CType.record([
-    Field(Label.named('expected_fee'), CType.nat),
-  ])),
-    Field(Label.named('BadBurn'), CType.record([
-    Field(Label.named('min_burn_amount'), CType.nat),
-  ])),
-    Field(Label.named('InsufficientFunds'), CType.record([
-    Field(Label.named('balance'), CType.nat),
-  ])),
+    Field(
+      Label.named('BadFee'),
+      CType.record([Field(Label.named('expected_fee'), CType.nat)]),
+    ),
+    Field(
+      Label.named('BadBurn'),
+      CType.record([Field(Label.named('min_burn_amount'), CType.nat)]),
+    ),
+    Field(
+      Label.named('InsufficientFunds'),
+      CType.record([Field(Label.named('balance'), CType.nat)]),
+    ),
     Field(Label.named('TooOld'), CType.null_),
-    Field(Label.named('CreatedInFuture'), CType.record([
-    Field(Label.named('ledger_time'), CType.nat64),
-  ])),
-    Field(Label.named('Duplicate'), CType.record([
-    Field(Label.named('duplicate_of'), CType.nat),
-  ])),
+    Field(
+      Label.named('CreatedInFuture'),
+      CType.record([Field(Label.named('ledger_time'), CType.nat64)]),
+    ),
+    Field(
+      Label.named('Duplicate'),
+      CType.record([Field(Label.named('duplicate_of'), CType.nat)]),
+    ),
     Field(Label.named('TemporarilyUnavailable'), CType.null_),
-    Field(Label.named('GenericError'), CType.record([
-    Field(Label.named('error_code'), CType.nat),
-    Field(Label.named('message'), CType.text),
-  ])),
+    Field(
+      Label.named('GenericError'),
+      CType.record([
+        Field(Label.named('error_code'), CType.nat),
+        Field(Label.named('message'), CType.text),
+      ]),
+    ),
   ]);
 
   @override
@@ -371,7 +377,9 @@ sealed class ICRC1TransferError with CandidSerializable {
 
   factory ICRC1TransferError.fromBytes(List<int> bytes) {
     final raw = CandidUtils.decodeOneTyped(bytes, ctype);
-    return ICRC1TransferError.fromCandid(JsonParser.valueEnsureAsMap<String, dynamic>(raw));
+    return ICRC1TransferError.fromCandid(
+      JsonParser.valueEnsureAsMap<String, dynamic>(raw),
+    );
   }
 }
 
@@ -379,23 +387,17 @@ sealed class ICRC1TransferError with CandidSerializable {
 final class ICRC1TransferErrorBadFee extends ICRC1TransferError {
   final BigInt expectedFee;
 
-  const ICRC1TransferErrorBadFee({
-    required this.expectedFee,
-  });
+  const ICRC1TransferErrorBadFee({required this.expectedFee});
 
   @override
   CType get candidType => ICRC1TransferError.ctype;
 
   @override
-  dynamic get candidValue => Variant('BadFee', {
-    'expected_fee': expectedFee,
-  });
+  dynamic get candidValue => Variant('BadFee', {'expected_fee': expectedFee});
 
   @override
   Map<String, dynamic> toJson() => {
-    'BadFee': {
-      'expected_fee': expectedFee,
-    },
+    'BadFee': {'expected_fee': expectedFee},
   };
 
   factory ICRC1TransferErrorBadFee.fromCandid(Map<String, dynamic> json) {
@@ -409,23 +411,18 @@ final class ICRC1TransferErrorBadFee extends ICRC1TransferError {
 final class ICRC1TransferErrorBadBurn extends ICRC1TransferError {
   final BigInt minBurnAmount;
 
-  const ICRC1TransferErrorBadBurn({
-    required this.minBurnAmount,
-  });
+  const ICRC1TransferErrorBadBurn({required this.minBurnAmount});
 
   @override
   CType get candidType => ICRC1TransferError.ctype;
 
   @override
-  dynamic get candidValue => Variant('BadBurn', {
-    'min_burn_amount': minBurnAmount,
-  });
+  dynamic get candidValue =>
+      Variant('BadBurn', {'min_burn_amount': minBurnAmount});
 
   @override
   Map<String, dynamic> toJson() => {
-    'BadBurn': {
-      'min_burn_amount': minBurnAmount,
-    },
+    'BadBurn': {'min_burn_amount': minBurnAmount},
   };
 
   factory ICRC1TransferErrorBadBurn.fromCandid(Map<String, dynamic> json) {
@@ -439,26 +436,22 @@ final class ICRC1TransferErrorBadBurn extends ICRC1TransferError {
 final class ICRC1TransferErrorInsufficientFunds extends ICRC1TransferError {
   final BigInt balance;
 
-  const ICRC1TransferErrorInsufficientFunds({
-    required this.balance,
-  });
+  const ICRC1TransferErrorInsufficientFunds({required this.balance});
 
   @override
   CType get candidType => ICRC1TransferError.ctype;
 
   @override
-  dynamic get candidValue => Variant('InsufficientFunds', {
-    'balance': balance,
-  });
+  dynamic get candidValue => Variant('InsufficientFunds', {'balance': balance});
 
   @override
   Map<String, dynamic> toJson() => {
-    'InsufficientFunds': {
-      'balance': balance,
-    },
+    'InsufficientFunds': {'balance': balance},
   };
 
-  factory ICRC1TransferErrorInsufficientFunds.fromCandid(Map<String, dynamic> json) {
+  factory ICRC1TransferErrorInsufficientFunds.fromCandid(
+    Map<String, dynamic> json,
+  ) {
     return ICRC1TransferErrorInsufficientFunds(
       balance: json.valueAsBigInt<BigInt>('balance'),
     );
@@ -483,26 +476,23 @@ final class ICRC1TransferErrorTooOld extends ICRC1TransferError {
 final class ICRC1TransferErrorCreatedInFuture extends ICRC1TransferError {
   final ICRC1Timestamp ledgerTime;
 
-  const ICRC1TransferErrorCreatedInFuture({
-    required this.ledgerTime,
-  });
+  const ICRC1TransferErrorCreatedInFuture({required this.ledgerTime});
 
   @override
   CType get candidType => ICRC1TransferError.ctype;
 
   @override
-  dynamic get candidValue => Variant('CreatedInFuture', {
-    'ledger_time': ledgerTime,
-  });
+  dynamic get candidValue =>
+      Variant('CreatedInFuture', {'ledger_time': ledgerTime});
 
   @override
   Map<String, dynamic> toJson() => {
-    'CreatedInFuture': {
-      'ledger_time': ledgerTime,
-    },
+    'CreatedInFuture': {'ledger_time': ledgerTime},
   };
 
-  factory ICRC1TransferErrorCreatedInFuture.fromCandid(Map<String, dynamic> json) {
+  factory ICRC1TransferErrorCreatedInFuture.fromCandid(
+    Map<String, dynamic> json,
+  ) {
     return ICRC1TransferErrorCreatedInFuture(
       ledgerTime: json.valueAsBigInt<BigInt>('ledger_time'),
     );
@@ -513,23 +503,18 @@ final class ICRC1TransferErrorCreatedInFuture extends ICRC1TransferError {
 final class ICRC1TransferErrorDuplicate extends ICRC1TransferError {
   final BigInt duplicateOf;
 
-  const ICRC1TransferErrorDuplicate({
-    required this.duplicateOf,
-  });
+  const ICRC1TransferErrorDuplicate({required this.duplicateOf});
 
   @override
   CType get candidType => ICRC1TransferError.ctype;
 
   @override
-  dynamic get candidValue => Variant('Duplicate', {
-    'duplicate_of': duplicateOf,
-  });
+  dynamic get candidValue =>
+      Variant('Duplicate', {'duplicate_of': duplicateOf});
 
   @override
   Map<String, dynamic> toJson() => {
-    'Duplicate': {
-      'duplicate_of': duplicateOf,
-    },
+    'Duplicate': {'duplicate_of': duplicateOf},
   };
 
   factory ICRC1TransferErrorDuplicate.fromCandid(Map<String, dynamic> json) {
@@ -540,7 +525,8 @@ final class ICRC1TransferErrorDuplicate extends ICRC1TransferError {
 }
 
 /// Variant arm `TransferError.TemporarilyUnavailable` (nullary).
-final class ICRC1TransferErrorTemporarilyUnavailable extends ICRC1TransferError {
+final class ICRC1TransferErrorTemporarilyUnavailable
+    extends ICRC1TransferError {
   const ICRC1TransferErrorTemporarilyUnavailable();
 
   @override
@@ -567,17 +553,12 @@ final class ICRC1TransferErrorGenericError extends ICRC1TransferError {
   CType get candidType => ICRC1TransferError.ctype;
 
   @override
-  dynamic get candidValue => Variant('GenericError', {
-    'error_code': errorCode,
-    'message': message,
-  });
+  dynamic get candidValue =>
+      Variant('GenericError', {'error_code': errorCode, 'message': message});
 
   @override
   Map<String, dynamic> toJson() => {
-    'GenericError': {
-      'error_code': errorCode,
-      'message': message,
-    },
+    'GenericError': {'error_code': errorCode, 'message': message},
   };
 
   factory ICRC1TransferErrorGenericError.fromCandid(Map<String, dynamic> json) {
@@ -587,8 +568,6 @@ final class ICRC1TransferErrorGenericError extends ICRC1TransferError {
     );
   }
 }
-
-
 
 /// Candid variant `Value`.
 sealed class ICRC1Value with CandidSerializable {
@@ -617,7 +596,9 @@ sealed class ICRC1Value with CandidSerializable {
       return ICRC1ValueText(json.valueAsString<String>('Text'));
     }
     if (json.containsKey('Blob')) {
-      return ICRC1ValueBlob(json.valueAsBytes<List<int>>('Blob', encoding: StringEncoding.base64));
+      return ICRC1ValueBlob(
+        json.valueAsBytes<List<int>>('Blob', encoding: StringEncoding.base64),
+      );
     }
     throw ArgumentException.invalidOperationArguments(
       'ICRC1Value.fromCandid',
@@ -627,7 +608,9 @@ sealed class ICRC1Value with CandidSerializable {
 
   factory ICRC1Value.fromBytes(List<int> bytes) {
     final raw = CandidUtils.decodeOneTyped(bytes, ctype);
-    return ICRC1Value.fromCandid(JsonParser.valueEnsureAsMap<String, dynamic>(raw));
+    return ICRC1Value.fromCandid(
+      JsonParser.valueEnsureAsMap<String, dynamic>(raw),
+    );
   }
 }
 
@@ -690,6 +673,3 @@ final class ICRC1ValueBlob extends ICRC1Value {
   @override
   Map<String, dynamic> toJson() => {'Blob': value};
 }
-
-
-
